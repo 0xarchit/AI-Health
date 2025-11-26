@@ -34,14 +34,14 @@ export default function Dashboard() {
     try {
       let res = await fetch("/api/history");
       
-      // If unauthorized (401), try to refresh session
+      
       if (res.status === 401) {
         const refreshRes = await fetch("/api/auth/refresh", { method: "POST" });
         if (refreshRes.ok) {
-           // Retry history fetch
+           
            res = await fetch("/api/history");
         } else {
-           // Refresh failed, redirect to login
+           
            router.push("/");
            return;
         }
@@ -89,12 +89,10 @@ export default function Dashboard() {
       const formData = new FormData();
       formData.append("file", file);
 
-      // Send file directly to analyze endpoint (no intermediate upload step)
       const analyzeRes = await fetch("/api/analyze", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          // Content-Type is set automatically by browser for FormData
         },
         body: formData,
       });
@@ -132,7 +130,6 @@ export default function Dashboard() {
       </header>
 
       <main className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Upload & Analysis */}
         <div className="lg:col-span-2 space-y-6">
           <Card className="border-dashed border-2 shadow-none hover:border-primary/50 transition-colors">
             <CardContent className="pt-6">

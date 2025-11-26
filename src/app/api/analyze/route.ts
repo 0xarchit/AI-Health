@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
 
-  // Validate file size (max 5MB)
+  
   if (file.size > 5 * 1024 * 1024) {
     return NextResponse.json({ error: "File too large (max 5MB)" }, { status: 400 });
   }
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
       throw new Error("Failed to get access token");
     }
 
-    // Process file in-memory
+    
     const fileBuffer = Buffer.from(await file.arrayBuffer());
     const base64Image = fileBuffer.toString("base64");
     const mimeType = file.type;
@@ -90,7 +90,8 @@ export async function POST(req: NextRequest) {
     }
 
     
-    const model = "gemini-flash-latest"; 
+    
+    const model = process.env.GEMINI_MODEL;
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
     const response = await fetch(url, {
@@ -174,7 +175,7 @@ export async function POST(req: NextRequest) {
 
     const data = await response.json();
     
-    // No file cleanup needed (in-memory processing)
+    
 
     
     let textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
