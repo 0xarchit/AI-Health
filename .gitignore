@@ -57,8 +57,4 @@ ehthumbs.db
 Desktop.ini
 
 # Temporary files
-tmp/*.jpeg
-tmp/*.webp
-tmp/*.png
-tmp/*.jpg
 discovery.json

@@ -4,7 +4,6 @@ import { db } from "@/lib/db";
 import { users, scans } from "@/db/schema";
 import { decrypt } from "@/lib/security";
 import { eq, and } from "drizzle-orm";
-import { readFile, unlink } from "fs/promises";
 import path, { join } from "path";
 import { OAuth2Client } from "google-auth-library";
 
@@ -21,12 +20,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid session" }, { status: 401 });
   }
 
-  const { fileId } = await req.json();
-  if (!fileId) {
-    return NextResponse.json({ error: "Missing file info" }, { status: 400 });
+  const formData = await req.formData();
+  const file = formData.get("file") as File;
+
+  if (!file) {
+    return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
 
-  
+  // Validate file size (max 5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    return NextResponse.json({ error: "File too large (max 5MB)" }, { status: 400 });
+  }
+
+  const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+  if (!allowedTypes.includes(file.type)) {
+    return NextResponse.json({ error: "Invalid file type" }, { status: 400 });
+  }
+
   const user = await db.query.users.findFirst({
     where: eq(users.id, session.userId),
   });
@@ -37,7 +47,6 @@ export async function POST(req: NextRequest) {
 
   const refreshToken = decrypt(user.encryptedRefreshToken);
 
-  
   const client = new OAuth2Client(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET
@@ -53,28 +62,10 @@ export async function POST(req: NextRequest) {
       throw new Error("Failed to get access token");
     }
 
-    
-    
-    
-    
-    
-    
-    
-    
-    const uploadDir = join(process.cwd(), "tmp", "uploads");
-    const fs = require('fs');
-    const files = await fs.promises.readdir(uploadDir);
-    const filename = files.find((f: string) => f.startsWith(fileId));
-    
-    if (!filename) {
-        throw new Error("File not found");
-    }
-
-    const filePath = join(uploadDir, filename);
-    const fileBuffer = await readFile(filePath);
+    // Process file in-memory
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
     const base64Image = fileBuffer.toString("base64");
-    const mimeType = filename.endsWith('.png') ? 'image/png' : 
-                     filename.endsWith('.webp') ? 'image/webp' : 'image/jpeg';
+    const mimeType = file.type;
 
     const crypto = require('crypto');
     const hashSum = crypto.createHash('sha256');
@@ -183,8 +174,7 @@ export async function POST(req: NextRequest) {
 
     const data = await response.json();
     
-    
-    await unlink(filePath).catch(console.error);
+    // No file cleanup needed (in-memory processing)
 
     
     let textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;

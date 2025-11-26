@@ -89,22 +89,14 @@ export default function Dashboard() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const uploadRes = await fetch("/api/upload", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-
-      if (!uploadRes.ok) throw new Error("Upload failed");
-      const { fileId } = await uploadRes.json();
-
+      // Send file directly to analyze endpoint (no intermediate upload step)
       const analyzeRes = await fetch("/api/analyze", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          // Content-Type is set automatically by browser for FormData
         },
-        body: JSON.stringify({ fileId }),
+        body: formData,
       });
 
       const data = await analyzeRes.json();
