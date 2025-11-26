@@ -59,6 +59,13 @@ export default function Dashboard() {
   const onDrop = (acceptedFiles: File[]) => {
     const selected = acceptedFiles[0];
     if (selected) {
+      if (selected.size > 5 * 1024 * 1024) {
+        setError("Image is too large. Maximum size is 5MB.");
+        setFile(null);
+        setPreview(null);
+        return;
+      }
+
       setFile(selected);
       setPreview(URL.createObjectURL(selected));
       setError(null);
@@ -173,6 +180,7 @@ export default function Dashboard() {
           <AnimatePresence>
             {error && (
               <motion.div
+                key="error"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
@@ -185,6 +193,7 @@ export default function Dashboard() {
 
             {result && (
               <motion.div
+                key="result"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="space-y-6"
