@@ -32,7 +32,21 @@ export default function Dashboard() {
 
   const fetchHistory = async () => {
     try {
-      const res = await fetch("/api/history");
+      let res = await fetch("/api/history");
+      
+      // If unauthorized (401), try to refresh session
+      if (res.status === 401) {
+        const refreshRes = await fetch("/api/auth/refresh", { method: "POST" });
+        if (refreshRes.ok) {
+           // Retry history fetch
+           res = await fetch("/api/history");
+        } else {
+           // Refresh failed, redirect to login
+           router.push("/");
+           return;
+        }
+      }
+
       if (res.ok) {
         const data = await res.json();
         setHistory(data.scans);
