@@ -12,9 +12,7 @@ export async function POST() {
     access_type: "offline",
     scope: [
       "https://www.googleapis.com/auth/userinfo.email",
-      "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/generative-language.retriever",
-      "https://www.googleapis.com/auth/generative-language.tuning",
+      "https://www.googleapis.com/auth/generative-language.tuning.readonly",
     ],
     prompt: "consent", 
   });
