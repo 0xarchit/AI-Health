@@ -26,8 +26,6 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
           <span>AI Health</span>
         </div>
         <div className="flex items-center gap-4">
-          <Link href="/privacy" className="text-sm text-muted-foreground hover:text-primary transition-colors">Privacy</Link>
-          <Link href="/terms" className="text-sm text-muted-foreground hover:text-primary transition-colors">Terms</Link>
           <ModeToggle />
           {isLoggedIn ? (
             <Button asChild>
@@ -110,6 +108,7 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
           <div className="flex gap-6">
             <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground">Privacy Policy</Link>
             <Link href="/terms" className="text-sm text-muted-foreground hover:text-foreground">Terms of Service</Link>
+            <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground">Contact Support</Link>
           </div>
         </div>
       </footer>
