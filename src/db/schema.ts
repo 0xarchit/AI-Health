@@ -35,7 +35,7 @@ export const scans = pgTable("scans", {
 export const contactLogs = pgTable("contact_logs", {
   id: uuid("id").defaultRandom().primaryKey(),
   ip: text("ip").notNull(),
-  type: text("type").notNull(), 
+  type: text("type").notNull(),
   name: text("name").notNull(),
   surname: text("surname"),
   email: text("email").notNull(),

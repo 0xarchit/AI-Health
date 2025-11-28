@@ -36,8 +36,7 @@ export async function POST(req: NextRequest) {
 
     
     
-    const ip = req.headers.get("cf-connecting-ip") || req.headers.get("x-vercel-forwarded-for") || req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
-    
+    const ip = req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip") || req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
     
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
     
@@ -48,10 +47,9 @@ export async function POST(req: NextRequest) {
     const ipLogs = recentLogs.filter(log => log.ip === ip);
 
     if (ipLogs.length >= 3) {
-      return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+      return NextResponse.json({ error: "Too many requests from your ip. Please try again later." }, { status: 429 });
     }
 
-    
     await db.insert(contactLogs).values({
       ip: ip,
       type: type,
@@ -62,7 +60,6 @@ export async function POST(req: NextRequest) {
       message: message,
     });
 
-    
     const botToken = process.env.BOT_TOKEN;
     const chatId = process.env.CHAT_ID;
 
@@ -71,34 +68,90 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
     }
 
-    const telegramMessage = `
-🔔 *New Contact Submission*
+    const escapeHtml = (str: string) => {
+      if (!str) return "";
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    };
 
-*Type:* ${type}
-*Name:* ${name} ${surname ? surname : ""}
-*Email:* ${email}
-*Telegram:* ${telegram ? `@${telegram}` : "Not provided"}
+    // Helper to truncate message to fit Telegram limits (4096 chars total)
+    // We leave some buffer for headers
+    const truncateMessage = (str: string, maxLength: number = 3500) => {
+        if (!str) return "";
+        if (str.length <= maxLength) return str;
+        return str.substring(0, maxLength) + "... (truncated)";
+    };
 
-*Message:*
-${message}
+    const telegramMessageHtml = `
+<b>🔔 New Contact Submission</b>
 
-_IP: ${ip}_
+<b>Type:</b> ${escapeHtml(type)}
+<b>Name:</b> ${escapeHtml(name)} ${surname ? escapeHtml(surname) : ""}
+<b>Email:</b> ${escapeHtml(email)}
+<b>Telegram:</b> ${telegram ? `@${escapeHtml(telegram)}` : "Not provided"}
+
+<b>Message:</b>
+${escapeHtml(truncateMessage(message))}
+
+<i>IP: ${escapeHtml(ip)}</i>
     `;
 
-    const telegramRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: telegramMessage,
-        parse_mode: "Markdown",
-      }),
-    });
+    try {
+        const telegramRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                chat_id: chatId,
+                text: telegramMessageHtml,
+                parse_mode: "HTML",
+            }),
+        });
 
-    if (!telegramRes.ok) {
-        const errorText = await telegramRes.text();
-        console.error("Telegram API Error:", errorText);
-        throw new Error("Failed to send notification");
+        if (!telegramRes.ok) {
+            const errorText = await telegramRes.text();
+            console.error("Telegram HTML API Error:", errorText);
+            throw new Error("HTML message failed");
+        }
+    } catch (error) {
+        console.error("Failed to send HTML message, falling back to plain text:", error);
+        
+        // Fallback to plain text
+        const telegramMessagePlain = `
+🔔 New Contact Submission
+
+Type: ${type}
+Name: ${name} ${surname || ""}
+Email: ${email}
+Telegram: ${telegram || "Not provided"}
+
+Message:
+${truncateMessage(message)}
+
+IP: ${ip}
+        `;
+
+        try {
+            const fallbackRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    text: telegramMessagePlain,
+                    // No parse_mode for plain text, so no escaping needed
+                }),
+            });
+
+            if (!fallbackRes.ok) {
+                const errorText = await fallbackRes.text();
+                console.error("Telegram Plain Text API Error:", errorText);
+            }
+        } catch (fallbackError) {
+            console.error("Failed to send fallback message:", fallbackError);
+        }
     }
 
     return NextResponse.json({ success: true });
