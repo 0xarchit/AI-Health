@@ -11,8 +11,19 @@ interface LandingPageProps {
   isLoggedIn: boolean;
 }
 
+import { useEffect } from "react";
+
 export default function LandingPage({ isLoggedIn }: LandingPageProps) {
   const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      const hasAuthStatus = document.cookie.includes("auth_status=true");
+      if (hasAuthStatus) {
+        router.refresh();
+      }
+    }
+  }, [isLoggedIn, router]);
 
 
   return (

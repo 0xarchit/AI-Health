@@ -1,7 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "default-secret-change-me");
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 const ALG = "HS256";
 
 export async function signSessionToken(payload: { userId: string }): Promise<string> {
@@ -30,6 +30,13 @@ export async function setAuthCookie(token: string) {
     path: "/",
     maxAge: 15 * 60, 
   });
+  cookieStore.set("auth_status", "true", {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+    maxAge: 15 * 60,
+  });
 }
 
 export async function setRefreshCookie(id: string, token: string) {
@@ -47,4 +54,5 @@ export async function clearCookies() {
   const cookieStore = await cookies();
   cookieStore.delete("session_token");
   cookieStore.delete("refresh_token");
+  cookieStore.delete("auth_status");
 }
