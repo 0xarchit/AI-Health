@@ -10,11 +10,11 @@ const STORE_NAME = 'models';
 const MODELS = {
   male: {
     key: 'human_body_male_glb',
-    path: 'https://models.zrxarchit.workers.dev/human_body_male.glb'
+    path: `${process.env.NEXT_PUBLIC_MODEL_URL}/human_body_male.glb`
   },
   female: {
     key: 'human_body_female_glb',
-    path: 'https://models.zrxarchit.workers.dev/human_body_female.glb'
+    path: `${process.env.NEXT_PUBLIC_MODEL_URL}/human_body_female.glb`
   }
 };
 

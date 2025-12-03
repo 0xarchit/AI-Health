@@ -16,6 +16,7 @@ interface Scan {
   foodName: string;
   nutritionJson: string;
   createdAt: string;
+  imageUrl?: string | null;
 }
 
 export default function Dashboard() {
@@ -103,9 +104,28 @@ export default function Dashboard() {
       }
       const { token } = await refreshRes.json();
 
+      const uploadFormData = new FormData();
+      uploadFormData.append("image", file);
+
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: uploadFormData,
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error("Failed to upload image");
+      }
+
+      const uploadData = await uploadRes.json();
+      const imageUrl = uploadData.url;
+
       const formData = new FormData();
       formData.append("file", file);
       formData.append("gender", gender);
+      formData.append("imageUrl", imageUrl);
 
       const analyzeRes = await fetch("/api/analyze", {
         method: "POST",
@@ -388,98 +408,102 @@ export default function Dashboard() {
                 </Card>
               </motion.div>
             )}
-          </AnimatePresence>
-        </div>
+            </AnimatePresence>
+          </div>
 
-        <div className="space-y-6">
-           <div className="w-full relative group">
-             {modelUrl ? (
-               <>
-                 <HumanModel affectedOrgans={result?.affected_organs || []} modelUrl={modelUrl} hasAnalyzed={!!result} gender={gender} />
-                 <Button 
-                   variant="destructive" 
-                   size="icon" 
-                   className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity"
-                   onClick={() => {
-                     if (confirm("Delete 3D model from storage? You will need to download it again.")) {
-                       deleteModel();
-                     }
-                   }}
-                   title="Delete 3D Model"
-                 >
-                   <Trash2 className="w-4 h-4" />
-                 </Button>
-               </>
-             ) : (
-               <div className="w-full h-[400px] bg-muted/30 border-2 border-dashed rounded-xl flex flex-col items-center justify-center p-6 text-center space-y-4">
-                 <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-                   <Box className="w-8 h-8 text-muted-foreground" />
-                 </div>
-                 <div className="space-y-2">
-                   <h3 className="font-semibold text-lg">3D Model Not Loaded</h3>
-                   <p className="text-sm text-muted-foreground">
-                     Download the 3D model to visualize how food affects your body interactively.
-                   </p>
-                 </div>
-                 <Button onClick={() => setHasSkippedModel(false)} className="gap-2">
-                   <Download className="w-4 h-4" /> Download Model
-                 </Button>
-               </div>
-             )}
-           </div>
-           <Card>
-             <CardHeader className="pb-3 flex flex-row items-center justify-between">
-               <CardTitle className="text-lg flex items-center gap-2">
-                 <History className="w-5 h-5 text-muted-foreground" />
-                 Recent Scans
-               </CardTitle>
-               {history.length > 0 && (
-                 <Button variant="ghost" size="sm" onClick={async () => {
-                    if (confirm("Are you sure you want to clear your scan history?")) {
-                      await fetch("/api/history", { method: "DELETE" });
-                      setHistory([]);
-                    }
-                 }} className="text-xs text-muted-foreground hover:text-destructive h-8">
-                   Clear
-                 </Button>
-               )}
-             </CardHeader>
-             <CardContent className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
-               {history.length === 0 ? (
-                 <p className="text-sm text-muted-foreground text-center py-8">No scans yet.</p>
-               ) : (
-                 history.map((scan) => (
-                   <div 
-                     key={scan.id} 
+          <div className="space-y-6">
+             <div className="w-full relative group">
+               {modelUrl ? (
+                 <>
+                   <HumanModel affectedOrgans={result?.affected_organs || []} modelUrl={modelUrl} hasAnalyzed={!!result} gender={gender} />
+                   <Button 
+                     variant="destructive" 
+                     size="icon" 
+                     className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity"
                      onClick={() => {
-                       try {
-                         const data = JSON.parse(scan.nutritionJson);
-                         setResult(data);
-                         setFile(null); 
-                         setPreview(null);
-                         window.scrollTo({ top: 0, behavior: 'smooth' });
-                       } catch (e) {
-                         console.error("Failed to parse history item", e);
+                       if (confirm("Delete 3D model from storage? You will need to download it again.")) {
+                         deleteModel();
                        }
                      }}
-                     className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border cursor-pointer active:scale-[0.98]"
+                     title="Delete 3D Model"
                    >
-                     <div className="bg-primary/10 p-2 rounded-md">
-                        <ImageIcon className="w-4 h-4 text-primary" />
-                     </div>
-                     <div>
-                       <p className="font-medium text-sm">{scan.foodName}</p>
-                       <p className="text-xs text-muted-foreground">{new Date(scan.createdAt).toLocaleDateString()}</p>
-                     </div>
+                     <Trash2 className="w-4 h-4" />
+                   </Button>
+                 </>
+               ) : (
+                 <div className="w-full h-[400px] bg-muted/30 border-2 border-dashed rounded-xl flex flex-col items-center justify-center p-6 text-center space-y-4">
+                   <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+                     <Box className="w-8 h-8 text-muted-foreground" />
                    </div>
-                 ))
+                   <div className="space-y-2">
+                     <h3 className="font-semibold text-lg">3D Model Not Loaded</h3>
+                     <p className="text-sm text-muted-foreground">
+                       Download the 3D model to visualize how food affects your body interactively.
+                     </p>
+                   </div>
+                   <Button onClick={() => setHasSkippedModel(false)} className="gap-2">
+                     <Download className="w-4 h-4" /> Download Model
+                   </Button>
+                 </div>
                )}
-             </CardContent>
-           </Card>
+             </div>
+             <Card>
+               <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                 <CardTitle className="text-lg flex items-center gap-2">
+                   <History className="w-5 h-5 text-muted-foreground" />
+                   Recent Scans
+                 </CardTitle>
+                 {history.length > 0 && (
+                   <Button variant="ghost" size="sm" onClick={async () => {
+                      if (confirm("Are you sure you want to clear your scan history?")) {
+                        await fetch("/api/history", { method: "DELETE" });
+                        setHistory([]);
+                      }
+                   }} className="text-xs text-muted-foreground hover:text-destructive h-8">
+                     Clear
+                   </Button>
+                 )}
+               </CardHeader>
+               <CardContent className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+                 {history.length === 0 ? (
+                   <p className="text-sm text-muted-foreground text-center py-8">No scans yet.</p>
+                 ) : (
+                   history.map((scan) => (
+                     <div 
+                       key={scan.id} 
+                       onClick={() => {
+                         try {
+                           const data = JSON.parse(scan.nutritionJson);
+                           setResult(data);
+                           setFile(null); 
+                           setPreview(scan.imageUrl || null);
+                           window.scrollTo({ top: 0, behavior: 'smooth' });
+                         } catch (e) {
+                           console.error("Failed to parse history item", e);
+                         }
+                       }}
+                       className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border cursor-pointer active:scale-[0.98]"
+                     >
+                       <div className="bg-primary/10 p-2 rounded-md overflow-hidden w-12 h-12 flex-shrink-0 flex items-center justify-center">
+                         {scan.imageUrl ? (
+                           <img src={scan.imageUrl} alt={scan.foodName} className="w-full h-full object-cover" />
+                         ) : (
+                           <ImageIcon className="w-6 h-6 text-primary" />
+                         )}
+                       </div>
+                       <div>
+                         <p className="font-medium text-sm">{scan.foodName}</p>
+                         <p className="text-xs text-muted-foreground">{new Date(scan.createdAt).toLocaleDateString()}</p>
+                       </div>
+                     </div>
+                   ))
+                 )}
+               </CardContent>
+             </Card>
 
-           {}
-        </div>
-      </main>
+             {}
+          </div>
+        </main>
       </div>
     </div>
   );

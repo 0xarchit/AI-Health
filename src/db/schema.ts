@@ -32,6 +32,16 @@ export const scans = pgTable("scans", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const images = pgTable("images", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  url: text("url").notNull(),
+  fileId: text("file_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const contactLogs = pgTable("contact_logs", {
   id: uuid("id").defaultRandom().primaryKey(),
   ip: text("ip").notNull(),

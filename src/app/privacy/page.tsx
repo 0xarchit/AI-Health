@@ -39,7 +39,7 @@ export default function PrivacyPage() {
           <h2 className="text-xl font-semibold">2. Data We Collect</h2>
           <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
             <li><strong>Google Account Information:</strong> When you sign in with Google, we collect your email address and Google ID to authenticate you.</li>
-            <li><strong>Uploaded Images:</strong> Images you upload are processed solely for the purpose of nutrition analysis.</li>
+            <li><strong>Uploaded Images:</strong> Images you upload are processed for nutrition analysis and stored temporarily. They are deleted upon your request (clearing history).</li>
             <li><strong>Usage Data:</strong> We may collect anonymous usage statistics to improve our service.</li>
           </ul>
         </section>
@@ -63,6 +63,7 @@ export default function PrivacyPage() {
           </p>
           <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
             <li><strong>Google Gemini API:</strong> Your uploaded images and prompts are sent to Google's Gemini API for processing. This is done under your own Google Cloud quota and subject to Google's AI Principles.</li>
+            <li><strong>ImageKit.io:</strong> We use ImageKit.io for temporary image storage and optimization. Images are stored securely and are permanently deleted from ImageKit servers when you clear your history within the application.</li>
           </ul>
         </section>
 

@@ -209,12 +209,14 @@ export async function POST(req: NextRequest) {
     }
 
     
+    const imageUrl = formData.get("imageUrl") as string;
+
     await db.insert(scans).values({
       userId: session.userId,
       foodName: nutritionData.food_name || "Unknown Food",
       nutritionJson: JSON.stringify(nutritionData),
       imageHash: hexHash,
-      imageUrl: null, 
+      imageUrl: imageUrl || null,
     });
 
     return NextResponse.json({ success: true, nutrition: nutritionData });
