@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
 
   const formData = await req.formData();
   const file = formData.get("file") as File;
+  const gender = formData.get("gender") as string || "male";
 
   if (!file) {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
@@ -105,7 +106,7 @@ export async function POST(req: NextRequest) {
           {
             parts: [
               {
-                text: `Analyze this food image. Return a strict JSON object with the following structure:
+                text: `Analyze this food image for a ${gender} and provide a detailed nutritional breakdown. Return a strict JSON object with the following structure:
                 {
                   "food_name": "string",
                   "description": "string (brief description)",
@@ -121,9 +122,20 @@ export async function POST(req: NextRequest) {
                   },
                   "health_assessment": "string (Healthy, Moderate, Unhealthy - and why)",
                   "warnings": ["string"],
+                  "affected_organs": [
+                    {
+                      "organ": "string (heart, liver, stomach, brain, pancreas, kidneys, intestines, arteries, skin)",
+                      "risk": "string (High, Moderate, Low)",
+                      "description": "string (short explanation of impact)"
+                    }
+                  ],
                   "confidence_score": number (0-1)
                 }
-                Do not include markdown formatting. Return ONLY the JSON.`
+                IMPORTANT GUIDELINES:
+                1. If the food is generally healthy (e.g., fresh vegetables, balanced meals, fruits, salads), 'affected_organs' MUST be an empty array [].
+                2. ONLY list organs if there is a specific, notable NEGATIVE impact (e.g., high sugar affecting pancreas, high sodium affecting heart/kidneys, fried food affecting arteries).
+                3. Do NOT list 'Low' risk for normal digestion or minor effects. 'Low' risk is for slight concerns (e.g. slightly high salt), not for healthy food.
+                4. Do not include markdown formatting. Return ONLY the JSON.`
               },
               {
                 inline_data: {

@@ -4,10 +4,12 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, Loader2, AlertCircle, History, Zap, Image as ImageIcon } from "lucide-react";
+import { Upload, Loader2, AlertCircle, History, Zap, Image as ImageIcon, Utensils, LogOut, Trash2, Box, Activity, Download } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { motion, AnimatePresence } from "framer-motion";
+import { useModelLoader, ModelDownloading, ModelDownloadPrompt } from "@/components/ModelLoader";
 import { ModeToggle } from "@/components/mode-toggle";
+import HumanModel from "@/components/3d/HumanModel";
 
 interface Scan {
   id: string;
@@ -17,31 +19,35 @@ interface Scan {
 }
 
 export default function Dashboard() {
+  const [gender, setGender] = useState<'male' | 'female'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('selectedGender') as 'male' | 'female') || 'male';
+    }
+    return 'male';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('selectedGender', gender);
+  }, [gender]);
+  const { modelUrl, progress, loading: modelLoading, downloading, startDownload, deleteModel } = useModelLoader(gender);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<Scan[]>([]);
+  const [hasSkippedModel, setHasSkippedModel] = useState(false);
   const router = useRouter();
-
-  
-  useEffect(() => {
-    fetchHistory();
-  }, []);
 
   const fetchHistory = async () => {
     try {
       let res = await fetch("/api/history");
       
-      
       if (res.status === 401) {
         const refreshRes = await fetch("/api/auth/refresh", { method: "POST" });
         if (refreshRes.ok) {
-           
            res = await fetch("/api/history");
         } else {
-           
            router.push("/");
            return;
         }
@@ -55,6 +61,10 @@ export default function Dashboard() {
       console.error("Failed to fetch history", e);
     }
   };
+
+  useEffect(() => {
+    fetchHistory();
+  }, []);
 
   const onDrop = (acceptedFiles: File[]) => {
     const selected = acceptedFiles[0];
@@ -95,6 +105,7 @@ export default function Dashboard() {
 
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("gender", gender);
 
       const analyzeRes = await fetch("/api/analyze", {
         method: "POST",
@@ -121,140 +132,254 @@ export default function Dashboard() {
     router.push("/");
   };
 
-  return (
-    <div className="min-h-screen bg-background p-6 space-y-8">
-      <header className="flex justify-between items-center max-w-6xl mx-auto bg-card p-4 rounded-xl border shadow-sm">
-        <div className="flex items-center gap-2 font-bold text-xl">
-           <div className="bg-primary/10 p-2 rounded-lg">
-             <Zap className="w-5 h-5 text-primary" />
-           </div>
-           <span>Dashboard</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <ModeToggle />
-          <Button variant="ghost" onClick={handleLogout}>Sign Out</Button>
-        </div>
-      </header>
+  if (downloading) {
+    return <ModelDownloading progress={progress} />;
+  }
 
-      <main className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
-          <Card className="border-dashed border-2 shadow-none hover:border-primary/50 transition-colors">
-            <CardContent className="pt-6">
-              <div
-                {...getRootProps()}
-                className={`flex flex-col items-center justify-center h-64 rounded-xl cursor-pointer transition-all
-                  ${isDragActive ? "bg-primary/5 scale-[0.99]" : "bg-muted/30 hover:bg-muted/50"}
-                  ${preview ? "p-4" : "p-10"}
-                `}
-              >
-                <input {...getInputProps()} />
-                {preview ? (
-                  <img src={preview} alt="Preview" className="h-full object-contain rounded-lg shadow-md" />
-                ) : (
-                  <div className="text-center space-y-4">
-                    <div className="bg-background p-4 rounded-full shadow-sm inline-block">
-                       <Upload className="w-8 h-8 text-muted-foreground" />
+  return (
+    <div className="min-h-screen bg-background p-6">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {!modelUrl && !modelLoading && !hasSkippedModel && (
+          <ModelDownloadPrompt 
+            onDownload={startDownload} 
+            onSkip={() => setHasSkippedModel(true)}
+            gender={gender}
+            setGender={setGender}
+          />
+        )}
+
+        <header className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-primary/10 rounded-xl">
+              <Utensils className="w-8 h-8 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">AI Health Analysis</h1>
+              <p className="text-muted-foreground">Upload food images for instant nutritional breakdown</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <ModeToggle />
+            <Button variant="ghost" onClick={handleLogout} className="gap-2">
+              <LogOut className="w-4 h-4" />
+              Sign Out
+            </Button>
+          </div>
+        </header>
+
+        <main className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-6">
+            <Card className="border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 transition-colors">
+              <CardContent className="p-8">
+                {!file ? (
+                  <div 
+                    {...getRootProps()} 
+                    className={`flex flex-col items-center justify-center gap-4 cursor-pointer transition-all
+                      ${isDragActive ? "scale-105" : ""}`}
+                  >
+                    <input {...getInputProps()} />
+                    <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-2">
+                      {loading ? (
+                        <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                      ) : (
+                        <Upload className="w-10 h-10 text-primary" />
+                      )}
                     </div>
-                    <div>
-                      <p className="text-lg font-medium">Drag & drop food image</p>
-                      <p className="text-sm text-muted-foreground">or click to browse</p>
+                    <div className="text-center space-y-2">
+                      <h3 className="text-xl font-semibold">
+                        {loading ? "Analyzing Food..." : "Drop your food image here"}
+                      </h3>
+                      <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                        Support for JPG, PNG and WebP. AI will identify ingredients and nutritional value.
+                      </p>
+                    </div>
+                    <Button disabled={loading} variant="secondary" className="mt-4">
+                      {loading ? "Processing..." : "Select Image"}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-6">
+                    <div className="relative w-full max-w-md aspect-video rounded-xl overflow-hidden shadow-lg">
+                      <img 
+                        src={preview!} 
+                        alt="Selected food" 
+                        className="w-full h-full object-cover"
+                      />
+                      <button 
+                        onClick={() => {
+                          setFile(null);
+                          setPreview(null);
+                        }}
+                        className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white hover:bg-red-500 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="flex gap-4 w-full max-w-md">
+                      <Button 
+                        onClick={() => {
+                          setFile(null);
+                          setPreview(null);
+                        }}
+                        variant="outline" 
+                        className="flex-1"
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        onClick={handleAnalyze} 
+                        disabled={loading} 
+                        className="flex-1 gap-2"
+                      >
+                        {loading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" /> Analyzing...
+                          </>
+                        ) : (
+                          <>
+                            <Zap className="w-4 h-4" /> Analyze Food
+                          </>
+                        )}
+                      </Button>
                     </div>
                   </div>
                 )}
-              </div>
-            </CardContent>
-            <CardFooter className="justify-between border-t bg-muted/10 p-4">
-               <p className="text-xs text-muted-foreground">Supports JPEG, PNG, WEBP up to 5MB</p>
-               <Button onClick={handleAnalyze} disabled={!file || loading} size="lg" className="rounded-full px-8">
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analyzing...
-                  </>
-                ) : (
-                  "Analyze Nutrition"
-                )}
-              </Button>
-            </CardFooter>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <AnimatePresence>
-            {error && (
-              <motion.div
-                key="error"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="p-4 bg-destructive/10 text-destructive rounded-lg flex items-center gap-2"
-              >
-                <AlertCircle className="w-5 h-5" />
-                {error}
-              </motion.div>
-            )}
-
+            <AnimatePresence mode="wait">
             {result && (
               <motion.div
-                key="result"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
                 className="space-y-6"
               >
                 <Card className="overflow-hidden border-primary/20 shadow-lg">
-                  <div className="h-2 bg-gradient-to-r from-green-400 to-blue-500" />
-                  <CardHeader>
-                    <CardTitle className="text-2xl flex items-center gap-2">
-                       {result.food_name || "Food Item"}
-                    </CardTitle>
-                    <CardDescription>
-                      {result.description}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {}
+                  <div className="relative h-48 bg-muted">
+                    {preview && (
+                      <img 
+                        src={preview} 
+                        alt="Food preview" 
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent" />
+                    <div className="absolute bottom-4 left-6">
+                      <h2 className="text-3xl font-bold text-foreground">{result.food_name}</h2>
+                      <p className="text-muted-foreground">{result.description}</p>
+                    </div>
+                  </div>
+                  
+                  <CardContent className="p-6 space-y-8">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <NutritionStat label="Calories" value={result.nutrition.calories} unit="kcal" color="text-orange-500" />
-                      <NutritionStat label="Protein" value={result.nutrition.protein} unit="g" color="text-blue-500" />
-                      <NutritionStat label="Carbs" value={result.nutrition.carbs} unit="g" color="text-yellow-500" />
-                      <NutritionStat label="Fat" value={result.nutrition.fat} unit="g" color="text-red-500" />
-                      <NutritionStat label="Fiber" value={result.nutrition.fiber} unit="g" color="text-green-600" />
-                      <NutritionStat label="Sugar" value={result.nutrition.sugar} unit="g" color="text-pink-500" />
-                      <NutritionStat label="Sodium" value={result.nutrition.sodium} unit="mg" color="text-gray-500" />
-                      <div className="bg-muted/30 p-3 rounded-xl text-center border flex flex-col justify-center items-center">
-                         <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Confidence</p>
-                         <div className="flex items-center gap-1">
-                           <span className="text-xl font-bold">{(result.confidence_score * 100).toFixed(0)}%</span>
+                      <div className="bg-primary/5 p-4 rounded-xl text-center border border-primary/10">
+                        <div className="text-2xl font-bold text-primary">{result.nutrition.calories}</div>
+                        <div className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Calories</div>
+                      </div>
+                      <div className="bg-blue-500/5 p-4 rounded-xl text-center border border-blue-500/10">
+                        <div className="text-2xl font-bold text-blue-500">{result.nutrition.protein}g</div>
+                        <div className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Protein</div>
+                      </div>
+                      <div className="bg-orange-500/5 p-4 rounded-xl text-center border border-orange-500/10">
+                        <div className="text-2xl font-bold text-orange-500">{result.nutrition.carbs}g</div>
+                        <div className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Carbs</div>
+                      </div>
+                      <div className="bg-green-500/5 p-4 rounded-xl text-center border border-green-500/10">
+                        <div className="text-2xl font-bold text-green-500">{result.nutrition.fat}g</div>
+                        <div className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Fats</div>
+                      </div>
+                      {result.nutrition.sugar !== undefined && (
+                        <div className="bg-pink-500/5 p-4 rounded-xl text-center border border-pink-500/10">
+                          <div className="text-2xl font-bold text-pink-500">{result.nutrition.sugar}g</div>
+                          <div className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Sugar</div>
+                        </div>
+                      )}
+                      {result.nutrition.sodium !== undefined && (
+                        <div className="bg-purple-500/5 p-4 rounded-xl text-center border border-purple-500/10">
+                          <div className="text-2xl font-bold text-purple-500">{result.nutrition.sodium}mg</div>
+                          <div className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Sodium</div>
+                        </div>
+                      )}
+                      {result.nutrition.fiber !== undefined && (
+                        <div className="bg-emerald-500/5 p-4 rounded-xl text-center border border-emerald-500/10">
+                          <div className="text-2xl font-bold text-emerald-500">{result.nutrition.fiber}g</div>
+                          <div className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Fiber</div>
+                        </div>
+                      )}
+                    </div>
+
+                    {result.ingredients && result.ingredients.length > 0 && (
+                      <div className="space-y-3">
+                        <h3 className="font-semibold flex items-center gap-2 text-lg">
+                          <Utensils className="w-5 h-5 text-primary" /> Ingredients
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                          {result.ingredients.map((ing: string, i: number) => (
+                            <span key={i} className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm font-medium border">
+                              {ing}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-3">
+                       <h3 className="font-semibold flex items-center gap-2 text-lg">
+                         <Activity className="w-5 h-5 text-primary" /> Health Assessment
+                       </h3>
+                       <div className="bg-muted/30 p-4 rounded-xl border">
+                         <div className="flex items-center gap-2 mb-2">
+                            <span className="font-semibold text-primary">Verdict:</span>
+                            <span className="font-medium">{result.health_assessment}</span>
                          </div>
+                         <div className="flex items-center gap-2">
+                            <span className="font-semibold text-primary">Confidence:</span>
+                            <span className="font-medium">{(result.confidence_score * 100).toFixed(0)}%</span>
+                         </div>
+                       </div>
+                    </div>
+
+                    {result.affected_organs && result.affected_organs.length > 0 && (
+                      <div className="space-y-3">
+                        <h3 className="font-semibold flex items-center gap-2 text-lg">
+                          <Activity className="w-5 h-5 text-primary" /> Body Impact
+                        </h3>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {result.affected_organs.map((organ: any, i: number) => (
+                            <div key={i} className="bg-card p-4 rounded-xl border shadow-sm hover:shadow-md transition-shadow">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="font-semibold capitalize flex items-center gap-2">
+                                  {organ.organ}
+                                </span>
+                                <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium border ${
+                                  organ.risk === 'High' ? 'bg-red-500/10 text-red-600 border-red-200 dark:border-red-900' : 
+                                  organ.risk === 'Moderate' ? 'bg-yellow-500/10 text-yellow-600 border-yellow-200 dark:border-yellow-900' : 
+                                  'bg-green-500/10 text-green-600 border-green-200 dark:border-green-900'
+                                }`}>
+                                  {organ.risk} Risk
+                                </span>
+                              </div>
+                              <p className="text-sm text-muted-foreground leading-relaxed">
+                                {organ.description}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
 
-                    {}
-                    <div>
-                      <h4 className="font-semibold mb-2 text-sm uppercase tracking-wider text-muted-foreground">Ingredients</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {result.ingredients.map((ing: string, i: number) => (
-                          <span key={i} className="bg-secondary text-secondary-foreground px-2.5 py-1 rounded-md text-sm">
-                            {ing}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    {}
-                    <div>
-                       <h4 className="font-semibold mb-2 text-sm uppercase tracking-wider text-muted-foreground">Health Assessment</h4>
-                       <p className="text-muted-foreground text-sm leading-relaxed bg-muted/30 p-4 rounded-lg border">
-                         {result.health_assessment}
-                       </p>
-                    </div>
-
-                    {}
                     {result.warnings && result.warnings.length > 0 && (
-                      <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
-                        <h4 className="font-semibold text-yellow-600 dark:text-yellow-500 mb-2 flex items-center gap-2">
-                          <AlertCircle className="w-4 h-4" /> Warnings
+                      <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-4">
+                        <h4 className="font-semibold text-yellow-600 dark:text-yellow-500 mb-3 flex items-center gap-2">
+                          <AlertCircle className="w-5 h-5" /> Warnings
                         </h4>
-                        <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                        <ul className="space-y-2">
                           {result.warnings.map((warning: string, i: number) => (
-                            <li key={i}>{warning}</li>
+                            <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                              <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-yellow-500 shrink-0" />
+                              {warning}
+                            </li>
                           ))}
                         </ul>
                       </div>
@@ -266,8 +391,42 @@ export default function Dashboard() {
           </AnimatePresence>
         </div>
 
-        {}
         <div className="space-y-6">
+           <div className="w-full relative group">
+             {modelUrl ? (
+               <>
+                 <HumanModel affectedOrgans={result?.affected_organs || []} modelUrl={modelUrl} hasAnalyzed={!!result} gender={gender} />
+                 <Button 
+                   variant="destructive" 
+                   size="icon" 
+                   className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity"
+                   onClick={() => {
+                     if (confirm("Delete 3D model from storage? You will need to download it again.")) {
+                       deleteModel();
+                     }
+                   }}
+                   title="Delete 3D Model"
+                 >
+                   <Trash2 className="w-4 h-4" />
+                 </Button>
+               </>
+             ) : (
+               <div className="w-full h-[400px] bg-muted/30 border-2 border-dashed rounded-xl flex flex-col items-center justify-center p-6 text-center space-y-4">
+                 <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+                   <Box className="w-8 h-8 text-muted-foreground" />
+                 </div>
+                 <div className="space-y-2">
+                   <h3 className="font-semibold text-lg">3D Model Not Loaded</h3>
+                   <p className="text-sm text-muted-foreground">
+                     Download the 3D model to visualize how food affects your body interactively.
+                   </p>
+                 </div>
+                 <Button onClick={() => setHasSkippedModel(false)} className="gap-2">
+                   <Download className="w-4 h-4" /> Download Model
+                 </Button>
+               </div>
+             )}
+           </div>
            <Card>
              <CardHeader className="pb-3 flex flex-row items-center justify-between">
                <CardTitle className="text-lg flex items-center gap-2">
@@ -321,6 +480,7 @@ export default function Dashboard() {
            {}
         </div>
       </main>
+      </div>
     </div>
   );
 }

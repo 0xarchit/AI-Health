@@ -78,8 +78,8 @@ export async function POST(req: NextRequest) {
         .replace(/'/g, "&#039;");
     };
 
-    // Helper to truncate message to fit Telegram limits (4096 chars total)
-    // We leave some buffer for headers
+    
+    
     const truncateMessage = (str: string, maxLength: number = 3500) => {
         if (!str) return "";
         if (str.length <= maxLength) return str;
@@ -119,7 +119,7 @@ ${escapeHtml(truncateMessage(message))}
     } catch (error) {
         console.error("Failed to send HTML message, falling back to plain text:", error);
         
-        // Fallback to plain text
+        
         const telegramMessagePlain = `
 🔔 New Contact Submission
 
@@ -141,7 +141,7 @@ IP: ${ip}
                 body: JSON.stringify({
                     chat_id: chatId,
                     text: telegramMessagePlain,
-                    // No parse_mode for plain text, so no escaping needed
+                    
                 }),
             });
 
