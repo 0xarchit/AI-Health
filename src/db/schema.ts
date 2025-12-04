@@ -5,6 +5,10 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   googleId: text("google_id").notNull().unique(),
   encryptedRefreshToken: text("encrypted_refresh_token").notNull(),
+  name: text("name"),
+  picture: text("picture"),
+  givenName: text("given_name"),
+  familyName: text("family_name"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -52,4 +56,29 @@ export const contactLogs = pgTable("contact_logs", {
   telegram: text("telegram"),
   message: text("message").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const medicalRecords = pgTable("medical_records", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  fileName: text("file_name").notNull(),
+  extractedText: text("extracted_text").notNull(),
+  summary: text("summary"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const healthContext = pgTable("health_context", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  allergies: text("allergies").array(),
+  conditions: text("conditions").array(),
+  medications: text("medications").array(),
+  additionalNotes: text("additional_notes"),
+  gender: text("gender").default("male"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

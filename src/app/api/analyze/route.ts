@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifySessionToken } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { users, scans } from "@/db/schema";
+import { users, scans, healthContext, medicalRecords } from "@/db/schema";
 import { decrypt } from "@/lib/security";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import path, { join } from "path";
 import { OAuth2Client } from "google-auth-library";
 
@@ -92,6 +92,28 @@ export async function POST(req: NextRequest) {
 
     
     
+    
+    const healthCtx = await db.query.healthContext.findFirst({
+      where: eq(healthContext.userId, session.userId),
+    });
+
+    const medicalRecs = await db.query.medicalRecords.findMany({
+      where: eq(medicalRecords.userId, session.userId),
+      orderBy: [desc(medicalRecords.createdAt)],
+      limit: 3,
+    });
+
+    const contextString = `
+      User Health Context:
+      Allergies: ${healthCtx?.allergies?.join(", ") || "None"}
+      Conditions: ${healthCtx?.conditions?.join(", ") || "None"}
+      Medications: ${healthCtx?.medications?.join(", ") || "None"}
+      Notes: ${healthCtx?.additionalNotes || "None"}
+
+      Recent Medical Record Summaries:
+      ${medicalRecs.map(r => `- ${r.summary}`).join("\n")}
+    `;
+
     const model = process.env.GEMINI_MODEL;
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
@@ -106,7 +128,11 @@ export async function POST(req: NextRequest) {
           {
             parts: [
               {
-                text: `Analyze this food image for a ${gender} and provide a detailed nutritional breakdown. Return a strict JSON object with the following structure:
+                text: `Analyze this food image for a ${gender} and provide a detailed nutritional breakdown.
+                
+                ${contextString}
+
+                Return a strict JSON object with the following structure:
                 {
                   "food_name": "string",
                   "description": "string (brief description)",
@@ -121,7 +147,7 @@ export async function POST(req: NextRequest) {
                     "fiber": number 
                   },
                   "health_assessment": "string (Healthy, Moderate, Unhealthy - and why)",
-                  "warnings": ["string"],
+                  "warnings": ["string (Specific warnings based on user's allergies/conditions if applicable)"],
                   "affected_organs": [
                     {
                       "organ": "string (heart, liver, stomach, brain, pancreas, kidneys, intestines, arteries, skin)",
@@ -135,7 +161,8 @@ export async function POST(req: NextRequest) {
                 1. If the food is generally healthy (e.g., fresh vegetables, balanced meals, fruits, salads), 'affected_organs' MUST be an empty array [].
                 2. ONLY list organs if there is a specific, notable NEGATIVE impact (e.g., high sugar affecting pancreas, high sodium affecting heart/kidneys, fried food affecting arteries).
                 3. Do NOT list 'Low' risk for normal digestion or minor effects. 'Low' risk is for slight concerns (e.g. slightly high salt), not for healthy food.
-                4. Do not include markdown formatting. Return ONLY the JSON.`
+                4. CHECK FOR ALLERGIES/CONDITIONS: If the food contains ingredients the user is allergic to or bad for their conditions, highlight this in 'warnings' and 'health_assessment'.
+                5. Do not include markdown formatting. Return ONLY the JSON.`
               },
               {
                 inline_data: {

@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { contactLogs } from "@/db/schema";
 import { eq, gt, count } from "drizzle-orm";
-
+import { verifySessionToken } from "@/lib/auth";
+import { users } from "@/db/schema";
 import { cookies } from "next/headers";
 
 export async function POST(req: NextRequest) {
@@ -13,6 +14,16 @@ export async function POST(req: NextRequest) {
 
     if (!sessionToken && !refreshToken) {
       return NextResponse.json({ error: "Unauthorized. Please log in." }, { status: 401 });
+    }
+
+    let userDetails = null;
+    if (sessionToken) {
+      const payload = await verifySessionToken(sessionToken.value);
+      if (payload) {
+        userDetails = await db.query.users.findFirst({
+          where: eq(users.id, payload.userId),
+        });
+      }
     }
 
     const { name, surname, email, telegram, type, message } = await req.json();
@@ -36,7 +47,15 @@ export async function POST(req: NextRequest) {
 
     
     
+    
     const ip = req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip") || req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
+    const allIps = [
+      req.headers.get("cf-connecting-ip"),
+      req.headers.get("x-real-ip"),
+      req.headers.get("x-forwarded-for"),
+      req.headers.get("true-client-ip")
+    ].filter(Boolean).join(", ");
+    const userAgent = req.headers.get("user-agent") || "Unknown";
     
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
     
@@ -97,7 +116,15 @@ export async function POST(req: NextRequest) {
 <b>Message:</b>
 ${escapeHtml(truncateMessage(message))}
 
-<i>IP: ${escapeHtml(ip)}</i>
+<b>User Details:</b>
+<b>Account Name:</b> ${userDetails?.name ? escapeHtml(userDetails.name) : "N/A"}
+<b>Account Email:</b> ${userDetails?.email ? escapeHtml(userDetails.email) : "N/A"}
+<b>Picture:</b> ${userDetails?.picture ? `<a href="${userDetails.picture}">Link</a>` : "N/A"}
+
+<b>Technical Info:</b>
+<b>IP:</b> ${escapeHtml(ip)}
+<b>All IPs:</b> ${escapeHtml(allIps)}
+<b>User Agent:</b> ${escapeHtml(userAgent)}
     `;
 
     try {
@@ -131,7 +158,14 @@ Telegram: ${telegram || "Not provided"}
 Message:
 ${truncateMessage(message)}
 
+User Details:
+Account Name: ${userDetails?.name || "N/A"}
+Account Email: ${userDetails?.email || "N/A"}
+
+Technical Info:
 IP: ${ip}
+All IPs: ${allIps}
+User Agent: ${userAgent}
         `;
 
         try {
@@ -141,7 +175,6 @@ IP: ${ip}
                 body: JSON.stringify({
                     chat_id: chatId,
                     text: telegramMessagePlain,
-                    
                 }),
             });
 

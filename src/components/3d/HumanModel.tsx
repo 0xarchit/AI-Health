@@ -295,33 +295,41 @@ interface HumanModelProps {
   modelUrl: string;
   hasAnalyzed?: boolean;
   gender?: 'male' | 'female';
+  serverStatus?: 'checking' | 'available' | 'unavailable';
 }
 
-export default function HumanModel({ affectedOrgans = [], modelUrl, hasAnalyzed = false, gender = 'male' }: HumanModelProps) {
+export default function HumanModel({ affectedOrgans = [], modelUrl, hasAnalyzed = false, gender = 'male', serverStatus = 'available' }: HumanModelProps) {
   const { resolvedTheme } = useTheme();
   const theme = resolvedTheme;
 
   return (
-    <div className={`w-full h-[600px] rounded-xl overflow-hidden border shadow-2xl relative transition-colors duration-500
-      ${theme === 'dark' ? 'bg-gradient-to-b from-slate-950 to-slate-900 border-slate-800' : 'bg-gradient-to-b from-slate-100 to-white border-slate-200'}
-    `}>
+    <div className="w-full h-[600px] rounded-xl overflow-hidden border border-border bg-card/50 shadow-2xl relative transition-colors duration-500">
       <div className="absolute top-4 left-4 z-10">
-        <h3 className={`font-bold text-lg flex items-center gap-2 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-          <span className={`w-2 h-2 rounded-full ${!hasAnalyzed ? "bg-slate-500" : affectedOrgans.length === 0 ? "bg-green-500" : "bg-red-500"} animate-pulse`}></span>
+        <h3 className="font-bold text-lg flex items-center gap-2 text-foreground">
+          <span className={`w-2 h-2 rounded-full ${!hasAnalyzed ? "bg-muted-foreground" : affectedOrgans.length === 0 ? "bg-green-500" : "bg-red-500"} animate-pulse`}></span>
           Body Impact Analysis ({gender === 'male' ? 'Male' : 'Female'})
         </h3>
-        <p className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'} text-xs`}>Interactive 3D Visualization</p>
+        <p className="text-muted-foreground text-xs">Interactive 3D Visualization</p>
       </div>
 
-      {!hasAnalyzed && (
+      {!hasAnalyzed && serverStatus === 'available' && (
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none w-full px-4">
-          <div className={`backdrop-blur-sm border px-6 py-4 rounded-xl text-center shadow-lg
-            ${theme === 'dark' ? 'bg-slate-500/10 border-slate-500/30 shadow-[0_0_30px_rgba(100,116,139,0.2)]' : 'bg-white/50 border-slate-200 shadow-xl'}
-          `}>
-            <h3 className={`font-bold text-xl mb-1 flex items-center justify-center gap-2 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-800'}`}>
+          <div className="backdrop-blur-sm border border-border px-6 py-4 rounded-xl text-center shadow-lg bg-background/80">
+            <h3 className="font-bold text-xl mb-1 flex items-center justify-center gap-2 text-foreground">
               <span>👆</span> Select Food to Begin
             </h3>
-            <p className={`${theme === 'dark' ? 'text-slate-400/70' : 'text-slate-600'} text-sm`}>Upload or select a food item to see its impact.</p>
+            <p className="text-muted-foreground text-sm">Upload or select a food item to see its impact.</p>
+          </div>
+        </div>
+      )}
+
+      {serverStatus === 'unavailable' && (
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none w-full px-4">
+          <div className="bg-red-500/10 backdrop-blur-sm border border-red-500/30 px-6 py-4 rounded-xl text-center shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+            <h3 className="text-red-400 font-bold text-xl mb-1 flex items-center justify-center gap-2">
+              <span>⚠️</span> Server Unavailable
+            </h3>
+            <p className="text-red-200/70 text-sm">The 3D model server is currently down. Please try again later.</p>
           </div>
         </div>
       )}
@@ -354,7 +362,7 @@ export default function HumanModel({ affectedOrgans = [], modelUrl, hasAnalyzed 
         dpr={[1, 1.5]} 
         gl={{ preserveDrawingBuffer: true, antialias: true }}
       >
-        <Suspense fallback={<Html center><div className={theme === 'dark' ? "text-white text-sm" : "text-slate-900 text-sm"}>Loading 3D Model...</div></Html>}>
+        <Suspense fallback={<Html center><div className="text-foreground text-sm">Loading 3D Model...</div></Html>}>
           <Model affectedOrgans={affectedOrgans} modelUrl={modelUrl} gender={gender} />
           
           <OrbitControls 
