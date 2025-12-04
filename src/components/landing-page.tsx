@@ -109,20 +109,6 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
           />
         </div>
       </main>
-
-      {}
-      <footer className="border-t py-12 mt-20 bg-muted/20">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-          <p className="text-sm text-muted-foreground">
-            © 2025 AI Health. Built by 0xArchit
-          </p>
-          <div className="flex gap-6">
-            <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground">Privacy Policy</Link>
-            <Link href="/terms" className="text-sm text-muted-foreground hover:text-foreground">Terms of Service</Link>
-            <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground">Contact Support</Link>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

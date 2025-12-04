@@ -295,9 +295,10 @@ interface HumanModelProps {
   modelUrl: string;
   hasAnalyzed?: boolean;
   gender?: 'male' | 'female';
+  serverStatus?: 'checking' | 'available' | 'unavailable';
 }
 
-export default function HumanModel({ affectedOrgans = [], modelUrl, hasAnalyzed = false, gender = 'male' }: HumanModelProps) {
+export default function HumanModel({ affectedOrgans = [], modelUrl, hasAnalyzed = false, gender = 'male', serverStatus = 'available' }: HumanModelProps) {
   const { resolvedTheme } = useTheme();
   const theme = resolvedTheme;
 
@@ -313,7 +314,7 @@ export default function HumanModel({ affectedOrgans = [], modelUrl, hasAnalyzed 
         <p className={`${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'} text-xs`}>Interactive 3D Visualization</p>
       </div>
 
-      {!hasAnalyzed && (
+      {!hasAnalyzed && serverStatus === 'available' && (
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none w-full px-4">
           <div className={`backdrop-blur-sm border px-6 py-4 rounded-xl text-center shadow-lg
             ${theme === 'dark' ? 'bg-slate-500/10 border-slate-500/30 shadow-[0_0_30px_rgba(100,116,139,0.2)]' : 'bg-white/50 border-slate-200 shadow-xl'}
@@ -322,6 +323,17 @@ export default function HumanModel({ affectedOrgans = [], modelUrl, hasAnalyzed 
               <span>👆</span> Select Food to Begin
             </h3>
             <p className={`${theme === 'dark' ? 'text-slate-400/70' : 'text-slate-600'} text-sm`}>Upload or select a food item to see its impact.</p>
+          </div>
+        </div>
+      )}
+
+      {serverStatus === 'unavailable' && (
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none w-full px-4">
+          <div className="bg-red-500/10 backdrop-blur-sm border border-red-500/30 px-6 py-4 rounded-xl text-center shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+            <h3 className="text-red-400 font-bold text-xl mb-1 flex items-center justify-center gap-2">
+              <span>⚠️</span> Server Unavailable
+            </h3>
+            <p className="text-red-200/70 text-sm">The 3D model server is currently down. Please try again later.</p>
           </div>
         </div>
       )}

@@ -3,13 +3,14 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, Loader2, AlertCircle, History, Zap, Image as ImageIcon, Utensils, LogOut, Trash2, Box, Activity, Download } from "lucide-react";
-import { useDropzone } from "react-dropzone";
-import { motion, AnimatePresence } from "framer-motion";
+import { Trash2, Download, Box, Utensils, ArrowLeft, RotateCcw } from "lucide-react";
 import { useModelLoader, ModelDownloading, ModelDownloadPrompt } from "@/components/ModelLoader";
 import { ModeToggle } from "@/components/mode-toggle";
 import HumanModel from "@/components/3d/HumanModel";
+import { FileUploader } from "@/components/dashboard/FileUploader";
+import { AnalysisResult } from "@/components/dashboard/AnalysisResult";
+import { ScanHistory } from "@/components/dashboard/ScanHistory";
+import { ChatBot } from "@/components/dashboard/ChatBot";
 
 interface Scan {
   id: string;
@@ -30,15 +31,35 @@ export default function Dashboard() {
   useEffect(() => {
     localStorage.setItem('selectedGender', gender);
   }, [gender]);
-  const { modelUrl, progress, loading: modelLoading, downloading, startDownload, deleteModel } = useModelLoader(gender);
+  const { modelUrl, progress, loading: modelLoading, downloading, startDownload, deleteModel, serverStatus, checkServerStatus } = useModelLoader(gender);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("/api/user")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.user) {
+          setUser(data.user);
+        }
+      })
+      .catch((err) => console.error("Failed to fetch user:", err));
+  }, []);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<Scan[]>([]);
   const [hasSkippedModel, setHasSkippedModel] = useState(false);
   const router = useRouter();
+  const handleSignOut = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      router.push("/");
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
+  };
 
   const fetchHistory = async () => {
     try {
@@ -67,28 +88,7 @@ export default function Dashboard() {
     fetchHistory();
   }, []);
 
-  const onDrop = (acceptedFiles: File[]) => {
-    const selected = acceptedFiles[0];
-    if (selected) {
-      if (selected.size > 5 * 1024 * 1024) {
-        setError("Image is too large. Maximum size is 5MB.");
-        setFile(null);
-        setPreview(null);
-        return;
-      }
 
-      setFile(selected);
-      setPreview(URL.createObjectURL(selected));
-      setError(null);
-      setResult(null);
-    }
-  };
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: { "image/*": [".jpeg", ".png", ".webp"] },
-    maxFiles: 1,
-  });
 
   const handleAnalyze = async () => {
     if (!file) return;
@@ -152,6 +152,16 @@ export default function Dashboard() {
     router.push("/");
   };
 
+  const handleClear = () => {
+    setFile(null);
+    setPreview(null);
+    setResult(null);
+    setError(null);
+    if (document.querySelector('input[type="file"]')) {
+      (document.querySelector('input[type="file"]') as HTMLInputElement).value = '';
+    }
+  };
+
   if (downloading) {
     return <ModelDownloading progress={progress} />;
   }
@@ -165,11 +175,16 @@ export default function Dashboard() {
             onSkip={() => setHasSkippedModel(true)}
             gender={gender}
             setGender={setGender}
+            serverStatus={serverStatus}
+            checkServerStatus={checkServerStatus}
           />
         )}
 
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="mr-2">
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
             <div className="p-3 bg-primary/10 rounded-xl">
               <Utensils className="w-8 h-8 text-primary" />
             </div>
@@ -180,242 +195,74 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center gap-4">
             <ModeToggle />
-            <Button variant="ghost" onClick={handleLogout} className="gap-2">
-              <LogOut className="w-4 h-4" />
-              Sign Out
-            </Button>
           </div>
         </header>
 
         <main className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            <Card className="border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 transition-colors">
-              <CardContent className="p-8">
-                {!file ? (
-                  <div 
-                    {...getRootProps()} 
-                    className={`flex flex-col items-center justify-center gap-4 cursor-pointer transition-all
-                      ${isDragActive ? "scale-105" : ""}`}
-                  >
-                    <input {...getInputProps()} />
-                    <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-2">
-                      {loading ? (
-                        <Loader2 className="w-10 h-10 text-primary animate-spin" />
-                      ) : (
-                        <Upload className="w-10 h-10 text-primary" />
-                      )}
-                    </div>
-                    <div className="text-center space-y-2">
-                      <h3 className="text-xl font-semibold">
-                        {loading ? "Analyzing Food..." : "Drop your food image here"}
-                      </h3>
-                      <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                        Support for JPG, PNG and WebP. AI will identify ingredients and nutritional value.
-                      </p>
-                    </div>
-                    <Button disabled={loading} variant="secondary" className="mt-4">
-                      {loading ? "Processing..." : "Select Image"}
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center gap-6">
-                    <div className="relative w-full max-w-md aspect-video rounded-xl overflow-hidden shadow-lg">
-                      <img 
-                        src={preview!} 
-                        alt="Selected food" 
-                        className="w-full h-full object-cover"
-                      />
-                      <button 
-                        onClick={() => {
-                          setFile(null);
-                          setPreview(null);
-                        }}
-                        className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white hover:bg-red-500 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <div className="flex gap-4 w-full max-w-md">
-                      <Button 
-                        onClick={() => {
-                          setFile(null);
-                          setPreview(null);
-                        }}
-                        variant="outline" 
-                        className="flex-1"
-                      >
-                        Cancel
-                      </Button>
-                      <Button 
-                        onClick={handleAnalyze} 
-                        disabled={loading} 
-                        className="flex-1 gap-2"
-                      >
-                        {loading ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" /> Analyzing...
-                          </>
-                        ) : (
-                          <>
-                            <Zap className="w-4 h-4" /> Analyze Food
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <FileUploader 
+              onAnalyze={handleAnalyze} 
+              loading={loading} 
+              modelUrl={modelUrl}
+              deleteModel={deleteModel}
+              setHasSkippedModel={setHasSkippedModel}
+              file={file}
+              setFile={setFile}
+              preview={preview}
+              setPreview={setPreview}
+            />
 
-            <AnimatePresence mode="wait">
-            {result && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="space-y-6"
-              >
-                <Card className="overflow-hidden border-primary/20 shadow-lg">
-                  <div className="relative h-48 bg-muted">
-                    {preview && (
-                      <img 
-                        src={preview} 
-                        alt="Food preview" 
-                        className="w-full h-full object-cover"
-                      />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent" />
-                    <div className="absolute bottom-4 left-6">
-                      <h2 className="text-3xl font-bold text-foreground">{result.food_name}</h2>
-                      <p className="text-muted-foreground">{result.description}</p>
-                    </div>
-                  </div>
-                  
-                  <CardContent className="p-6 space-y-8">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="bg-primary/5 p-4 rounded-xl text-center border border-primary/10">
-                        <div className="text-2xl font-bold text-primary">{result.nutrition.calories}</div>
-                        <div className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Calories</div>
-                      </div>
-                      <div className="bg-blue-500/5 p-4 rounded-xl text-center border border-blue-500/10">
-                        <div className="text-2xl font-bold text-blue-500">{result.nutrition.protein}g</div>
-                        <div className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Protein</div>
-                      </div>
-                      <div className="bg-orange-500/5 p-4 rounded-xl text-center border border-orange-500/10">
-                        <div className="text-2xl font-bold text-orange-500">{result.nutrition.carbs}g</div>
-                        <div className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Carbs</div>
-                      </div>
-                      <div className="bg-green-500/5 p-4 rounded-xl text-center border border-green-500/10">
-                        <div className="text-2xl font-bold text-green-500">{result.nutrition.fat}g</div>
-                        <div className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Fats</div>
-                      </div>
-                      {result.nutrition.sugar !== undefined && (
-                        <div className="bg-pink-500/5 p-4 rounded-xl text-center border border-pink-500/10">
-                          <div className="text-2xl font-bold text-pink-500">{result.nutrition.sugar}g</div>
-                          <div className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Sugar</div>
-                        </div>
-                      )}
-                      {result.nutrition.sodium !== undefined && (
-                        <div className="bg-purple-500/5 p-4 rounded-xl text-center border border-purple-500/10">
-                          <div className="text-2xl font-bold text-purple-500">{result.nutrition.sodium}mg</div>
-                          <div className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Sodium</div>
-                        </div>
-                      )}
-                      {result.nutrition.fiber !== undefined && (
-                        <div className="bg-emerald-500/5 p-4 rounded-xl text-center border border-emerald-500/10">
-                          <div className="text-2xl font-bold text-emerald-500">{result.nutrition.fiber}g</div>
-                          <div className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Fiber</div>
-                        </div>
-                      )}
-                    </div>
-
-                    {result.ingredients && result.ingredients.length > 0 && (
-                      <div className="space-y-3">
-                        <h3 className="font-semibold flex items-center gap-2 text-lg">
-                          <Utensils className="w-5 h-5 text-primary" /> Ingredients
-                        </h3>
-                        <div className="flex flex-wrap gap-2">
-                          {result.ingredients.map((ing: string, i: number) => (
-                            <span key={i} className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm font-medium border">
-                              {ing}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="space-y-3">
-                       <h3 className="font-semibold flex items-center gap-2 text-lg">
-                         <Activity className="w-5 h-5 text-primary" /> Health Assessment
-                       </h3>
-                       <div className="bg-muted/30 p-4 rounded-xl border">
-                         <div className="flex items-center gap-2 mb-2">
-                            <span className="font-semibold text-primary">Verdict:</span>
-                            <span className="font-medium">{result.health_assessment}</span>
-                         </div>
-                         <div className="flex items-center gap-2">
-                            <span className="font-semibold text-primary">Confidence:</span>
-                            <span className="font-medium">{(result.confidence_score * 100).toFixed(0)}%</span>
-                         </div>
-                       </div>
-                    </div>
-
-                    {result.affected_organs && result.affected_organs.length > 0 && (
-                      <div className="space-y-3">
-                        <h3 className="font-semibold flex items-center gap-2 text-lg">
-                          <Activity className="w-5 h-5 text-primary" /> Body Impact
-                        </h3>
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          {result.affected_organs.map((organ: any, i: number) => (
-                            <div key={i} className="bg-card p-4 rounded-xl border shadow-sm hover:shadow-md transition-shadow">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="font-semibold capitalize flex items-center gap-2">
-                                  {organ.organ}
-                                </span>
-                                <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium border ${
-                                  organ.risk === 'High' ? 'bg-red-500/10 text-red-600 border-red-200 dark:border-red-900' : 
-                                  organ.risk === 'Moderate' ? 'bg-yellow-500/10 text-yellow-600 border-yellow-200 dark:border-yellow-900' : 
-                                  'bg-green-500/10 text-green-600 border-green-200 dark:border-green-900'
-                                }`}>
-                                  {organ.risk} Risk
-                                </span>
-                              </div>
-                              <p className="text-sm text-muted-foreground leading-relaxed">
-                                {organ.description}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {result.warnings && result.warnings.length > 0 && (
-                      <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-4">
-                        <h4 className="font-semibold text-yellow-600 dark:text-yellow-500 mb-3 flex items-center gap-2">
-                          <AlertCircle className="w-5 h-5" /> Warnings
-                        </h4>
-                        <ul className="space-y-2">
-                          {result.warnings.map((warning: string, i: number) => (
-                            <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                              <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-yellow-500 shrink-0" />
-                              {warning}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </motion.div>
+            {(preview || result) && (
+              <div className="flex justify-end">
+                <Button variant="outline" size="sm" onClick={handleClear} className="gap-2">
+                  <RotateCcw className="w-4 h-4" />
+                  Clear Analysis
+                </Button>
+              </div>
             )}
-            </AnimatePresence>
+
+            <AnalysisResult result={result} preview={preview} />
           </div>
 
           <div className="space-y-6">
+            {}
+            <div 
+              onClick={() => router.push("/profile")}
+              className="bg-white/5 backdrop-blur-xl rounded-3xl p-6 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors group"
+            >
+              <div className="flex items-center gap-4">
+                {user?.picture ? (
+                  <img 
+                    src={user.picture} 
+                    alt={user.name} 
+                    className="w-16 h-16 rounded-full border-2 border-blue-500/50 object-cover group-hover:scale-105 transition-transform"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center text-2xl group-hover:scale-105 transition-transform">
+                    {user?.name?.[0] || "U"}
+                  </div>
+                )}
+                
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-white group-hover:text-blue-400 transition-colors">
+                    {user?.name || "Loading..."}
+                  </h3>
+                  <p className="text-sm text-gray-400">View Profile & Settings</p>
+                </div>
+                
+                <div className="bg-white/10 p-2 rounded-full group-hover:bg-blue-500/20 group-hover:text-blue-400 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12h14" />
+                    <path d="m12 5 7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
              <div className="w-full relative group">
                {modelUrl ? (
                  <>
-                   <HumanModel affectedOrgans={result?.affected_organs || []} modelUrl={modelUrl} hasAnalyzed={!!result} gender={gender} />
+                   <HumanModel affectedOrgans={result?.affected_organs || []} modelUrl={modelUrl} hasAnalyzed={!!result} gender={gender} serverStatus={serverStatus} />
                    <Button 
                      variant="destructive" 
                      size="icon" 
@@ -447,61 +294,27 @@ export default function Dashboard() {
                  </div>
                )}
              </div>
-             <Card>
-               <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                 <CardTitle className="text-lg flex items-center gap-2">
-                   <History className="w-5 h-5 text-muted-foreground" />
-                   Recent Scans
-                 </CardTitle>
-                 {history.length > 0 && (
-                   <Button variant="ghost" size="sm" onClick={async () => {
-                      if (confirm("Are you sure you want to clear your scan history?")) {
-                        await fetch("/api/history", { method: "DELETE" });
-                        setHistory([]);
-                      }
-                   }} className="text-xs text-muted-foreground hover:text-destructive h-8">
-                     Clear
-                   </Button>
-                 )}
-               </CardHeader>
-               <CardContent className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
-                 {history.length === 0 ? (
-                   <p className="text-sm text-muted-foreground text-center py-8">No scans yet.</p>
-                 ) : (
-                   history.map((scan) => (
-                     <div 
-                       key={scan.id} 
-                       onClick={() => {
-                         try {
-                           const data = JSON.parse(scan.nutritionJson);
-                           setResult(data);
-                           setFile(null); 
-                           setPreview(scan.imageUrl || null);
-                           window.scrollTo({ top: 0, behavior: 'smooth' });
-                         } catch (e) {
-                           console.error("Failed to parse history item", e);
-                         }
-                       }}
-                       className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border cursor-pointer active:scale-[0.98]"
-                     >
-                       <div className="bg-primary/10 p-2 rounded-md overflow-hidden w-12 h-12 flex-shrink-0 flex items-center justify-center">
-                         {scan.imageUrl ? (
-                           <img src={scan.imageUrl} alt={scan.foodName} className="w-full h-full object-cover" />
-                         ) : (
-                           <ImageIcon className="w-6 h-6 text-primary" />
-                         )}
-                       </div>
-                       <div>
-                         <p className="font-medium text-sm">{scan.foodName}</p>
-                         <p className="text-xs text-muted-foreground">{new Date(scan.createdAt).toLocaleDateString()}</p>
-                       </div>
-                     </div>
-                   ))
-                 )}
-               </CardContent>
-             </Card>
+             
+             <ScanHistory 
+               history={history} 
+               onSelectScan={(scan) => {
+                 try {
+                   const data = JSON.parse(scan.nutritionJson);
+                   setResult(data);
+                   setFile(null); 
+                   setPreview(scan.imageUrl || null);
+                   window.scrollTo({ top: 0, behavior: 'smooth' });
+                 } catch (e) {
+                   console.error("Failed to parse history item", e);
+                 }
+               }}
+               onClearHistory={async () => {
+                 await fetch("/api/history", { method: "DELETE" });
+                 setHistory([]);
+               }}
+             />
 
-             {}
+             <ChatBot foodContext={result} />
           </div>
         </main>
       </div>

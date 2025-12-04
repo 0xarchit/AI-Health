@@ -26,6 +26,7 @@ export function useModelLoader(gender: Gender = 'male') {
   const [loading, setLoading] = useState(true); 
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [serverStatus, setServerStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
 
   
   useEffect(() => {
@@ -46,8 +47,24 @@ export function useModelLoader(gender: Gender = 'male') {
         setLoading(false);
       }
     };
+    
     checkCache();
   }, [gender]);
+
+  const checkServerStatus = useCallback(async () => {
+    setServerStatus('checking');
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_MODEL_URL}/health`);
+      if (response.ok) {
+        setServerStatus('available');
+      } else {
+        setServerStatus('unavailable');
+      }
+    } catch (err) {
+      console.error("Server health check failed", err);
+      setServerStatus('unavailable');
+    }
+  }, []);
 
   const startDownload = useCallback(async () => {
     setDownloading(true);
@@ -78,7 +95,7 @@ export function useModelLoader(gender: Gender = 'male') {
     }
   }, [gender]);
 
-  return { modelUrl, progress, loading, downloading, error, startDownload, deleteModel };
+  return { modelUrl, progress, loading, downloading, error, startDownload, deleteModel, serverStatus, checkServerStatus };
 }
 
 
@@ -159,13 +176,21 @@ export function ModelDownloadPrompt({
   onDownload, 
   onSkip,
   gender,
-  setGender
+  setGender,
+  serverStatus,
+  checkServerStatus
 }: { 
   onDownload: () => void, 
   onSkip: () => void,
   gender: Gender,
-  setGender: (g: Gender) => void
+  setGender: (g: Gender) => void,
+  serverStatus: 'checking' | 'available' | 'unavailable',
+  checkServerStatus: () => void
 }) {
+  useEffect(() => {
+    checkServerStatus();
+  }, [checkServerStatus]);
+
   return (
     <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-card border rounded-xl shadow-2xl max-w-md w-full p-6 space-y-6">
@@ -178,6 +203,25 @@ export function ModelDownloadPrompt({
             Download the 3D human model (~150MB) for interactive body impact visualization. 
             This is a one-time download.
           </p>
+          
+          <div className="flex items-center justify-center gap-2 text-sm pt-2">
+            <span className="text-muted-foreground">Server Status:</span>
+            {serverStatus === 'checking' && (
+              <span className="flex items-center gap-1 text-yellow-500">
+                <Loader2 className="w-3 h-3 animate-spin" /> Checking...
+              </span>
+            )}
+            {serverStatus === 'available' && (
+              <span className="text-green-500 font-medium flex items-center gap-1">
+                ● Online
+              </span>
+            )}
+            {serverStatus === 'unavailable' && (
+              <span className="text-red-500 font-medium flex items-center gap-1">
+                ● Offline
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="space-y-3">
@@ -203,8 +247,14 @@ export function ModelDownloadPrompt({
         </div>
 
         <div className="flex flex-col gap-3 pt-2">
-          <Button onClick={onDownload} size="lg" className="w-full gap-2">
-            <Download className="w-4 h-4" /> Download {gender === 'male' ? 'Male' : 'Female'} Model
+          <Button 
+            onClick={onDownload} 
+            size="lg" 
+            className="w-full gap-2"
+            disabled={serverStatus !== 'available'}
+          >
+            <Download className="w-4 h-4" /> 
+            {serverStatus === 'unavailable' ? 'Server Unavailable' : `Download ${gender === 'male' ? 'Male' : 'Female'} Model`}
           </Button>
           <Button variant="ghost" onClick={onSkip} className="w-full">
             Continue without 3D

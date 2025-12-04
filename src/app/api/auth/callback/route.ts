@@ -57,6 +57,10 @@ export async function GET(req: NextRequest) {
           email: userInfo.email,
           googleId: userInfo.id,
           encryptedRefreshToken: encryptedRefreshToken,
+          name: userInfo.name,
+          picture: userInfo.picture,
+          givenName: userInfo.given_name,
+          familyName: userInfo.family_name,
         })
         .returning();
       user = newUser;
@@ -65,7 +69,24 @@ export async function GET(req: NextRequest) {
       if (tokens.refresh_token) {
         await db
           .update(users)
-          .set({ encryptedRefreshToken })
+          .set({ 
+            encryptedRefreshToken,
+            name: userInfo.name,
+            picture: userInfo.picture,
+            givenName: userInfo.given_name,
+            familyName: userInfo.family_name,
+          })
+          .where(eq(users.id, user.id));
+      } else {
+        
+        await db
+          .update(users)
+          .set({ 
+            name: userInfo.name,
+            picture: userInfo.picture,
+            givenName: userInfo.given_name,
+            familyName: userInfo.family_name,
+          })
           .where(eq(users.id, user.id));
       }
     }
