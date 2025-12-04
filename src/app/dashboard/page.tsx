@@ -228,29 +228,29 @@ export default function Dashboard() {
             {}
             <div 
               onClick={() => router.push("/profile")}
-              className="bg-white/5 backdrop-blur-xl rounded-3xl p-6 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors group"
+              className="bg-card/50 backdrop-blur-xl rounded-3xl p-6 border border-border cursor-pointer hover:bg-accent/50 transition-colors group"
             >
               <div className="flex items-center gap-4">
                 {user?.picture ? (
                   <img 
                     src={user.picture} 
                     alt={user.name} 
-                    className="w-16 h-16 rounded-full border-2 border-blue-500/50 object-cover group-hover:scale-105 transition-transform"
+                    className="w-16 h-16 rounded-full border-2 border-primary/20 object-cover group-hover:scale-105 transition-transform"
                   />
                 ) : (
-                  <div className="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center text-2xl group-hover:scale-105 transition-transform">
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-2xl group-hover:scale-105 transition-transform text-primary">
                     {user?.name?.[0] || "U"}
                   </div>
                 )}
                 
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-white group-hover:text-blue-400 transition-colors">
+                  <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
                     {user?.name || "Loading..."}
                   </h3>
-                  <p className="text-sm text-gray-400">View Profile & Settings</p>
+                  <p className="text-sm text-muted-foreground">View Profile & Settings</p>
                 </div>
                 
-                <div className="bg-white/10 p-2 rounded-full group-hover:bg-blue-500/20 group-hover:text-blue-400 transition-colors">
+                <div className="bg-muted p-2 rounded-full group-hover:bg-primary/10 group-hover:text-primary transition-colors">
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M5 12h14" />
                     <path d="m12 5 7 7-7 7" />
