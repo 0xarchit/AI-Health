@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: "0xArchit"
+    given-names: "Archit"
+    alias: "0xarchit"
+    website: "https://0xarchit.is-a.dev"
+title: "AI Health - Smart Nutrition Analysis"
+version: 0.1.0
+date-released: 2024-01-01
+url: "https://github.com/0xarchit/AI-Health"
+repository-code: "https://github.com/0xarchit/AI-Health"
+license: "Custom"
+keywords:
+  - "ai"
+  - "health"
+  - "nutrition"
+  - "gemini-api"
+  - "nextjs"
