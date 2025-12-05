@@ -10,9 +10,13 @@ export async function GET(req: NextRequest) {
   const refreshTokenCookie = cookieStore.get("refresh_token")?.value;
 
   if (refreshTokenCookie) {
-    const [tokenId] = refreshTokenCookie.split(":");
-    if (tokenId) {
-      await db.delete(refreshTokens).where(eq(refreshTokens.id, tokenId));
+    try {
+      const [tokenId] = refreshTokenCookie.split(":");
+      if (tokenId) {
+        await db.delete(refreshTokens).where(eq(refreshTokens.id, tokenId));
+      }
+    } catch (e) {
+      console.error("Logout DB Error:", e);
     }
   }
 
@@ -25,9 +29,13 @@ export async function POST(req: NextRequest) {
   const refreshTokenCookie = cookieStore.get("refresh_token")?.value;
 
   if (refreshTokenCookie) {
-    const [tokenId] = refreshTokenCookie.split(":");
-    if (tokenId) {
-      await db.delete(refreshTokens).where(eq(refreshTokens.id, tokenId));
+    try {
+      const [tokenId] = refreshTokenCookie.split(":");
+      if (tokenId) {
+        await db.delete(refreshTokens).where(eq(refreshTokens.id, tokenId));
+      }
+    } catch (e) {
+      console.error("Logout DB Error:", e);
     }
   }
 

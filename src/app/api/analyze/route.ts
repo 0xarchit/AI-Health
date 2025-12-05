@@ -253,6 +253,9 @@ export async function POST(req: NextRequest) {
 
   } catch (err: any) {
     console.error("Analysis Error:", err);
+    if (err.message && (err.message.includes("invalid_grant") || err.message.includes("tokens.refresh_token is missing"))) {
+      return NextResponse.json({ error: "Google session expired. Please logout and login again." }, { status: 401 });
+    }
     return NextResponse.json({ error: err.message || "Analysis failed" }, { status: 500 });
   }
 }

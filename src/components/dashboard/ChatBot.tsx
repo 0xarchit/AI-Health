@@ -2,61 +2,94 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageSquare, Send, Loader2, X, Minimize2, Maximize2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Send, Bot, User, Minimize2, Maximize2, Sparkles, Activity, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { GlassPanel } from "@/components/ui/design-system";
+import { cn } from "@/lib/utils";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface Message {
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
 }
 
-export function ChatBot({ foodContext }: { foodContext?: any }) {
+interface ChatBotProps {
+  foodContext?: any; 
+}
+
+export function ChatBot({ foodContext }: ChatBotProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>([
+    { role: "assistant", content: "Hello. I am your personal health assistant. How can I help you optimize your biometrics today?" }
+  ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    scrollToBottom();
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
   }, [messages]);
 
-  const handleSend = async () => {
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!input.trim()) return;
 
-    const userMessage = input;
+    const userMessage: Message = { role: "user", content: input };
+    setMessages((prev) => [...prev, userMessage]);
     setInput("");
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setLoading(true);
 
     try {
-      const refreshRes = await fetch("/api/auth/refresh", { method: "POST" });
-      const { token } = await refreshRes.json();
 
-      const res = await fetch("/api/chat", {
+      
+      let res = await fetch("/api/chat", {
         method: "POST",
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: userMessage,
-          foodContext
+           message: userMessage.content,
+           foodContext
         }),
       });
 
-      const data = await res.json();
-      if (data.response) {
-        setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
+      
+      if (res.status === 401) {
+         try {
+           const refreshRes = await fetch("/api/auth/refresh", { method: "POST" });
+           if (refreshRes.ok) {
+              const { token } = await refreshRes.json();
+              
+              res = await fetch("/api/chat", {
+                method: "POST",
+                headers: { 
+                   "Content-Type": "application/json",
+                   "Authorization": `Bearer ${token}` 
+                },
+                body: JSON.stringify({
+                   message: userMessage.content,
+                   foodContext
+                }),
+              });
+           } else {
+             throw new Error("Session expired. Please login again.");
+           }
+         } catch (refreshErr) {
+            throw new Error("Session expired. Please login again.");
+         }
       }
-    } catch (err) {
-      console.error("Chat failed", err);
-      setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I encountered an error. Please try again." }]);
+
+      if (!res.ok) throw new Error("Failed to fetch response");
+
+      const data = await res.json();
+      setMessages((prev) => [...prev, { role: "assistant", content: data.response }]);
+    } catch (error) {
+      console.error("Chat error:", error);
+      setMessages((prev) => [...prev, { role: "assistant", content: "I encountered a system error. Please try again." }]);
     } finally {
       setLoading(false);
     }
@@ -70,82 +103,163 @@ export function ChatBot({ foodContext }: { foodContext?: any }) {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-20 right-6 w-96 h-[500px] z-50 shadow-2xl"
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="fixed bottom-24 right-6 w-[400px] z-[100] origin-bottom-right"
           >
-            <Card className="h-full flex flex-col border-primary/20">
-              <CardHeader className="p-4 border-b bg-primary/5 flex flex-row items-center justify-between space-y-0">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5 text-primary" />
-                  Health Assistant
-                </CardTitle>
-                <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} className="h-8 w-8">
-                  <X className="w-4 h-4" />
-                </Button>
-              </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
-                {messages.length === 0 && (
-                  <div className="text-center text-muted-foreground mt-10">
-                    <p>Hello! I'm your AI health assistant.</p>
-                    <p className="text-sm mt-2">Ask me about your health records, allergies, or the food you just analyzed.</p>
+            <GlassPanel className="flex flex-col h-[600px] shadow-[0_0_50px_rgba(0,0,0,0.5)] border-primary/20 backdrop-blur-xl">
+              {}
+              <div className="p-4 border-b border-border flex items-center justify-between bg-primary/5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30 relative">
+                    <Bot className="w-5 h-5 text-primary" />
+                    <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background animate-pulse" />
                   </div>
-                )}
-                {messages.map((msg, i) => (
-                  <div
-                    key={i}
-                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-[80%] rounded-lg p-3 text-sm ${
-                        msg.role === 'user'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
-                      }`}
+                  <div>
+                    <h3 className="font-bold text-foreground flex items-center gap-2">
+                       A.I. Assistant
+                    </h3>
+                    <div className="flex items-center gap-1.5">
+                       <Activity className="w-3 h-3 text-primary" />
+                       <p className="text-xs text-muted-foreground">Systems Nominal</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setIsOpen(false)}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {}
+              <ScrollArea className="flex-1 p-4 bg-muted/20" ref={scrollRef}>
+                <div className="space-y-4">
+                  {messages.map((m, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={cn(
+                        "flex w-full items-start gap-3",
+                        m.role === "user" ? "flex-row-reverse" : ""
+                      )}
                     >
-                      {msg.content}
-                    </div>
-                  </div>
-                ))}
-                {loading && (
-                  <div className="flex justify-start">
-                    <div className="bg-muted rounded-lg p-3">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    </div>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </CardContent>
-              <div className="p-4 border-t bg-background">
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    handleSend();
-                  }}
-                  className="flex gap-2"
-                >
-                  <input
-                    className="flex-1 bg-background border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    placeholder="Type a message..."
+                      <Avatar className={cn(
+                        "w-8 h-8 border border-border",
+                         m.role === "assistant" ? "bg-primary/20" : "bg-muted"
+                      )}>
+                        <AvatarFallback className="bg-transparent text-xs">
+                           {m.role === "assistant" ? <Bot className="w-4 h-4 text-primary"/> : <User className="w-4 h-4"/>}
+                        </AvatarFallback>
+                      </Avatar>
+                      
+                      <div className={cn(
+                        "rounded-2xl p-3 text-sm max-w-[80%] relative leading-relaxed",
+                        m.role === "user" 
+                          ? "bg-primary text-primary-foreground shadow-sm rounded-tr-none" 
+                          : "bg-card border border-border text-foreground shadow-sm rounded-tl-none"
+                      )}>
+                        {m.role === "assistant" ? (
+                          <div className="prose prose-sm prose-slate dark:prose-invert max-w-none">
+                            <ReactMarkdown 
+                              remarkPlugins={[remarkGfm]}
+                              components={{
+                                p: ({node, ...props}: any) => <p className="mb-2 last:mb-0" {...props} />,
+                                ul: ({node, ...props}: any) => <ul className="list-disc pl-4 mb-2 space-y-1" {...props} />,
+                                ol: ({node, ...props}: any) => <ol className="list-decimal pl-4 mb-2 space-y-1" {...props} />,
+                                li: ({node, ...props}: any) => <li className="pl-1" {...props} />,
+                                h1: ({node, ...props}: any) => <h1 className="text-base font-bold text-primary mb-2 mt-4" {...props} />,
+                                h2: ({node, ...props}: any) => <h2 className="text-sm font-bold text-primary mb-2 mt-3" {...props} />,
+                                h3: ({node, ...props}: any) => <h3 className="text-sm font-semibold text-primary/90 mb-1 mt-2" {...props} />,
+                                code: ({node, ...props}: any) => <code className="bg-muted rounded px-1 py-0.5 text-xs font-mono text-primary" {...props} />,
+                                strong: ({node, ...props}: any) => <strong className="font-semibold text-primary" {...props} />,
+                              }}
+                            >
+                              {m.content}
+                            </ReactMarkdown>
+                            <div className="absolute -left-2 top-3 w-2 h-2 border-t border-l border-border bg-card transform rotate-45 -z-10" />
+                          </div>
+                        ) : (
+                          m.content
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                  {loading && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="flex items-center gap-2 text-xs text-muted-foreground ml-11"
+                    >
+                      <Sparkles className="w-3 h-3 animate-spin text-primary" />
+                      Analyzing...
+                    </motion.div>
+                  )}
+                </div>
+              </ScrollArea>
+
+              {}
+              <div className="p-4 bg-background/50 border-t border-border">
+                <form onSubmit={handleSend} className="flex items-center gap-3">
+                  <Input
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
+                    placeholder="Ask about your biometrics..."
+                    className="bg-muted/50 border-border focus-visible:ring-primary/50 text-sm h-11"
                   />
-                  <Button type="submit" size="icon" disabled={loading || !input.trim()}>
+                  <Button 
+                     type="submit" 
+                     disabled={loading} 
+                     size="icon"
+                     className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_15px_rgba(var(--primary),0.3)] h-11 w-11 rounded-xl shrink-0"
+                  >
                     <Send className="w-4 h-4" />
                   </Button>
                 </form>
               </div>
-            </Card>
+            </GlassPanel>
           </motion.div>
         )}
       </AnimatePresence>
 
       <motion.button
-        whileHover={{ scale: 1.05 }}
+        whileHover={{ scale: 1.1, textShadow: "0 0 8px rgb(var(--primary))" }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 h-12 w-12 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center z-50"
+        className={cn(
+           "fixed bottom-8 right-8 h-14 w-14 rounded-2xl shadow-[0_0_30px_rgba(var(--primary),0.4)] flex items-center justify-center z-[100] transition-all duration-300 border border-primary/20",
+           isOpen ? "bg-background text-foreground rotate-90" : "bg-primary text-primary-foreground"
+        )}
       >
-        {isOpen ? <Minimize2 className="w-6 h-6" /> : <MessageSquare className="w-6 h-6" />}
+        {isOpen ? (
+           <Minimize2 className="w-6 h-6" />
+        ) : (
+           <div className="relative">
+              <MessageSquare className="w-6 h-6" />
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full animate-ping" />
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full border-2 border-primary" />
+           </div>
+        )}
       </motion.button>
     </>
   );
+}
+
+function MessageSquare(props: any) {
+   return (
+      <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+   )
 }

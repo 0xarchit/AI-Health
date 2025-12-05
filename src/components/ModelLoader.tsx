@@ -54,17 +54,18 @@ export function useModelLoader(gender: Gender = 'male') {
   const checkServerStatus = useCallback(async () => {
     setServerStatus('checking');
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_MODEL_URL}/health`);
+      const response = await fetch(MODELS[gender].path, { method: 'HEAD' });
       if (response.ok) {
         setServerStatus('available');
       } else {
+        console.warn("Model file not found:", response.status);
         setServerStatus('unavailable');
       }
     } catch (err) {
       console.error("Server health check failed", err);
       setServerStatus('unavailable');
     }
-  }, []);
+  }, [gender]);
 
   const startDownload = useCallback(async () => {
     setDownloading(true);
@@ -192,56 +193,73 @@ export function ModelDownloadPrompt({
   }, [checkServerStatus]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-card border rounded-xl shadow-2xl max-w-md w-full p-6 space-y-6">
-        <div className="text-center space-y-2">
-          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Box className="w-8 h-8 text-primary" />
+    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-md flex items-center justify-center p-4">
+      <div className="bg-card/90 border border-white/10 rounded-3xl shadow-2xl max-w-md w-full p-8 space-y-8 relative overflow-hidden">
+        {}
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50" />
+        <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/20 blur-3xl rounded-full pointer-events-none" />
+
+        <div className="text-center space-y-4 relative z-10">
+          <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-2 border border-primary/20 shadow-[0_0_20px_rgba(var(--primary),0.2)]">
+            <Box className="w-10 h-10 text-primary" />
           </div>
-          <h2 className="text-2xl font-bold">Enhance Your Experience</h2>
-          <p className="text-muted-foreground">
-            Download the 3D human model (~150MB) for interactive body impact visualization. 
-            This is a one-time download.
-          </p>
+          <div>
+             <h2 className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-wb from-foreground to-foreground/70">
+               Initialize Biometrics
+             </h2>
+             <p className="text-muted-foreground mt-2 leading-relaxed">
+               Download the 3D anatomical model (~150MB) for real-time impact visualization. 
+             </p>
+          </div>
           
-          <div className="flex items-center justify-center gap-2 text-sm pt-2">
-            <span className="text-muted-foreground">Server Status:</span>
+          <div className="flex items-center justify-center gap-3 text-xs font-mono py-2 bg-secondary/30 rounded-lg border border-white/5">
+            <span className="text-muted-foreground uppercase tracking-widest">Server Grid:</span>
             {serverStatus === 'checking' && (
-              <span className="flex items-center gap-1 text-yellow-500">
-                <Loader2 className="w-3 h-3 animate-spin" /> Checking...
+              <span className="flex items-center gap-1 text-yellow-500 animate-pulse">
+                <Loader2 className="w-3 h-3 animate-spin" /> PINGING...
               </span>
             )}
             {serverStatus === 'available' && (
-              <span className="text-green-500 font-medium flex items-center gap-1">
-                ● Online
+              <span className="text-primary font-bold flex items-center gap-1">
+                ● ONLINE
               </span>
             )}
             {serverStatus === 'unavailable' && (
-              <span className="text-red-500 font-medium flex items-center gap-1">
-                ● Offline
+              <span className="text-destructive font-bold flex items-center gap-1">
+                ● OFFLINE
               </span>
             )}
           </div>
         </div>
 
-        <div className="space-y-3">
-          <span className="text-center block text-sm font-medium text-muted-foreground">Select Model Gender</span>
+        <div className="space-y-4">
+          <span className="text-center block text-xs font-bold uppercase tracking-widest text-muted-foreground">Select Physiology</span>
           <div className="grid grid-cols-2 gap-4">
             <div 
               onClick={() => setGender('male')}
-              className={`cursor-pointer border-2 rounded-xl p-4 flex flex-col items-center gap-2 transition-all
-                ${gender === 'male' ? 'border-primary bg-primary/5' : 'border-muted hover:border-primary/50'}`}
+              className={`cursor-pointer border-2 rounded-2xl p-4 flex flex-col items-center gap-3 transition-all duration-300 relative overflow-hidden group
+                ${gender === 'male' 
+                  ? 'border-emerald-500 bg-emerald-500/10 shadow-[0_0_20px_rgba(16,185,129,0.3)] scale-[1.02]' 
+                  : 'border-border bg-card hover:border-emerald-500/50 hover:bg-muted/50'}`}
             >
-              <User className="w-8 h-8" />
-              <span className="font-medium">Male</span>
+              <User className={`w-8 h-8 ${gender === 'male' ? 'text-emerald-500' : 'text-muted-foreground group-hover:text-emerald-500'} transition-colors`} />
+              <span className={`font-medium ${gender === 'male' ? 'text-emerald-500 font-bold' : 'text-muted-foreground'}`}>Male</span>
+              {gender === 'male' && (
+                <div className="absolute top-2 right-2 w-3 h-3 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.8)] animate-pulse" />
+              )}
             </div>
             <div 
               onClick={() => setGender('female')}
-              className={`cursor-pointer border-2 rounded-xl p-4 flex flex-col items-center gap-2 transition-all
-                ${gender === 'female' ? 'border-primary bg-primary/5' : 'border-muted hover:border-primary/50'}`}
+              className={`cursor-pointer border-2 rounded-2xl p-4 flex flex-col items-center gap-3 transition-all duration-300 relative overflow-hidden group
+                ${gender === 'female' 
+                  ? 'border-emerald-500 bg-emerald-500/10 shadow-[0_0_20px_rgba(16,185,129,0.3)] scale-[1.02]' 
+                  : 'border-border bg-card hover:border-emerald-500/50 hover:bg-muted/50'}`}
             >
-              <User className="w-8 h-8" />
-              <span className="font-medium">Female</span>
+              <User className={`w-8 h-8 ${gender === 'female' ? 'text-emerald-500' : 'text-muted-foreground group-hover:text-emerald-500'} transition-colors`} />
+              <span className={`font-medium ${gender === 'female' ? 'text-emerald-500 font-bold' : 'text-muted-foreground'}`}>Female</span>
+              {gender === 'female' && (
+                <div className="absolute top-2 right-2 w-3 h-3 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.8)] animate-pulse" />
+              )}
             </div>
           </div>
         </div>
@@ -250,14 +268,14 @@ export function ModelDownloadPrompt({
           <Button 
             onClick={onDownload} 
             size="lg" 
-            className="w-full gap-2"
+            className="w-full gap-2 h-12 text-base shadow-lg shadow-primary/20"
             disabled={serverStatus !== 'available'}
           >
-            <Download className="w-4 h-4" /> 
-            {serverStatus === 'unavailable' ? 'Server Unavailable' : `Download ${gender === 'male' ? 'Male' : 'Female'} Model`}
+            <Download className="w-5 h-5" /> 
+            {serverStatus === 'unavailable' ? 'Server Disconnected' : `Initiate Download`}
           </Button>
-          <Button variant="ghost" onClick={onSkip} className="w-full">
-            Continue without 3D
+          <Button variant="ghost" onClick={onSkip} className="w-full text-xs text-muted-foreground hover:text-foreground">
+            Skip Visualization Setup
           </Button>
         </div>
       </div>

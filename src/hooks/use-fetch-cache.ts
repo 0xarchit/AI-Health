@@ -12,6 +12,7 @@ interface UseCachedFetchOptions extends RequestInit {
 }
 
 let refreshPromise: Promise<Response> | null = null;
+let isRefreshing = false;
 
 export function useCachedFetch<T>(url: string, options?: UseCachedFetchOptions) {
   const [data, setData] = useState<T | null>(null);
@@ -77,7 +78,38 @@ export function useCachedFetch<T>(url: string, options?: UseCachedFetchOptions) 
         (fetchOptions as RequestInit).cache = 'reload';
       }
 
-      const res = await fetch(url, fetchOptions);
+      
+      
+      let res = await fetch(url, fetchOptions);
+
+      
+      if (res.status === 401) {
+         if (!isRefreshing) {
+            isRefreshing = true;
+            try {
+               const refreshRes = await fetch("/api/auth/refresh", { 
+                  method: "POST",
+               });
+               
+               if (refreshRes.ok) {
+                  const { token } = await refreshRes.json();
+                  
+                  
+                  
+                  res = await fetch(url, fetchOptions);
+               } else {
+                  throw new Error("Unauthorized");
+               }
+            } catch (refreshErr) {
+               throw new Error("Unauthorized");
+            } finally {
+               isRefreshing = false;
+            }
+         } else {
+            
+             throw new Error("Unauthorized");
+         }
+      }
       
       if (res.status === 401) {
         throw new Error("Unauthorized");

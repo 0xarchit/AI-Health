@@ -368,10 +368,20 @@ export default function HumanModel({ affectedOrgans = [], modelUrl, hasAnalyzed 
           <OrbitControls 
             makeDefault
             enableZoom={true} 
+            enablePan={true}
+            enableDamping={true}
+            dampingFactor={0.05}
             minPolarAngle={0} 
             maxPolarAngle={Math.PI}
             autoRotate={affectedOrgans.length === 0}
             autoRotateSpeed={0.5}
+            rotateSpeed={0.5}
+            zoomSpeed={0.5}
+            panSpeed={0.5}
+            touches={{
+              ONE: THREE.TOUCH.ROTATE,
+              TWO: THREE.TOUCH.DOLLY_PAN
+            }}
           />
         </Suspense>
       </Canvas>
