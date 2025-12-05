@@ -114,7 +114,7 @@ We deeply appreciate the tools and resources that make this project possible.
 
 ### Copyright
 **© 2025 0xArchit**. All Rights Reserved.
-Licensed under the [Custom License](LICENSE).
+Licensed under the [Custom License](LICENSE).  
 Developed with ❤️ by [0xArchit](https://0xarchit.is-a.dev).
 
 ---
