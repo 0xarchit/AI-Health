@@ -3,6 +3,24 @@ import { verifySessionToken } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { medicalRecords } from "@/db/schema";
 import { eq, desc, and } from "drizzle-orm";
+import { unstable_cache, revalidateTag } from "next/cache";
+
+const getMedicalRecords = async (userId: string) => {
+  return await db.query.medicalRecords.findMany({
+    where: eq(medicalRecords.userId, userId),
+    orderBy: [desc(medicalRecords.createdAt)],
+  });
+};
+
+const getCachedMedicalRecords = (userId: string) =>
+  unstable_cache(
+    async () => getMedicalRecords(userId),
+    [`medical-records-${userId}`],
+    {
+      tags: [`medical-records-${userId}`],
+      revalidate: 3600 
+    }
+  )();
 
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("Authorization");
@@ -18,12 +36,16 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const records = await db.query.medicalRecords.findMany({
-      where: eq(medicalRecords.userId, session.userId),
-      orderBy: [desc(medicalRecords.createdAt)],
-    });
+    const records = await getCachedMedicalRecords(session.userId);
 
-    return NextResponse.json({ records });
+    return NextResponse.json(
+      { records },
+      {
+        headers: {
+          "Cache-Control": "public, max-age=60, stale-while-revalidate=30",
+        },
+      }
+    );
   } catch (err: any) {
     console.error("Fetch Medical Records Error:", err);
     return NextResponse.json({ error: "Failed to fetch records" }, { status: 500 });
@@ -52,6 +74,7 @@ export async function DELETE(req: NextRequest) {
 
   try {
     await db.delete(medicalRecords).where(and(eq(medicalRecords.id, id), eq(medicalRecords.userId, session.userId)));
+    (revalidateTag as any)(`medical-records-${session.userId}`);
     return NextResponse.json({ success: true });
   } catch (err: any) {
     console.error("Delete Medical Record Error:", err);
@@ -83,6 +106,8 @@ export async function PATCH(req: NextRequest) {
     await db.update(medicalRecords)
       .set({ summary })
       .where(and(eq(medicalRecords.id, id), eq(medicalRecords.userId, session.userId)));
+
+    (revalidateTag as any)(`medical-records-${session.userId}`);
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

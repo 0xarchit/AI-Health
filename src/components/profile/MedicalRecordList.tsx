@@ -13,33 +13,25 @@ interface MedicalRecord {
   createdAt: string;
 }
 
+import { useCachedFetch } from "@/hooks/use-fetch-cache";
+
 export function MedicalRecordList({ refreshTrigger }: { refreshTrigger: number }) {
+  const { data: fetchedData, loading, refresh } = useCachedFetch<{ records: MedicalRecord[] }>("/api/medical-records", { withAuth: true });
   const [records, setRecords] = useState<MedicalRecord[]>([]);
-  const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editSummary, setEditSummary] = useState("");
 
-  const fetchRecords = useCallback(async () => {
-    try {
-      const refreshRes = await fetch("/api/auth/refresh", { method: "POST" });
-      if (!refreshRes.ok) return;
-      const { token } = await refreshRes.json();
-
-      const res = await fetch("/api/medical-records", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.records) setRecords(data.records);
-    } catch (err) {
-      console.error("Failed to fetch records", err);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (fetchedData && fetchedData.records) {
+      setRecords(fetchedData.records);
     }
-  }, []);
+  }, [fetchedData]);
 
   useEffect(() => {
-    fetchRecords();
-  }, [fetchRecords, refreshTrigger]);
+    if (refreshTrigger > 0) {
+      refresh();
+    }
+  }, [refreshTrigger, refresh]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this record?")) return;
@@ -52,7 +44,7 @@ export function MedicalRecordList({ refreshTrigger }: { refreshTrigger: number }
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      fetchRecords();
+      refresh();
     } catch (err) {
       console.error("Failed to delete record", err);
     }
@@ -83,7 +75,7 @@ export function MedicalRecordList({ refreshTrigger }: { refreshTrigger: number }
       });
       
       setEditingId(null);
-      fetchRecords();
+      refresh();
     } catch (err) {
       console.error("Failed to update record", err);
     }

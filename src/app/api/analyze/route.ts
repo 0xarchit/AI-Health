@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { verifySessionToken } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { users, scans, healthContext, medicalRecords } from "@/db/schema";
@@ -245,6 +246,8 @@ export async function POST(req: NextRequest) {
       imageHash: hexHash,
       imageUrl: imageUrl || null,
     });
+
+    (revalidateTag as any)(`history-${session.userId}`);
 
     return NextResponse.json({ success: true, nutrition: nutritionData });
 

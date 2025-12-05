@@ -9,32 +9,27 @@ import { MedicalRecordUploader } from "@/components/profile/MedicalRecordUploade
 import { MedicalRecordList } from "@/components/profile/MedicalRecordList";
 import { HealthContextEditor } from "@/components/profile/HealthContextEditor";
 
+import { useCachedFetch, clearApiCache } from "@/hooks/use-fetch-cache";
+
 export default function ProfilePage() {
+  const { data: userData, loading: userLoading, error } = useCachedFetch<{ user: any }>("/api/user");
   const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const router = useRouter();
 
   useEffect(() => {
-    fetch("/api/user")
-      .then((res) => {
-        if (res.status === 401) {
-          router.push("/");
-          return null;
-        }
-        return res.json();
-      })
-      .then((data) => {
-        if (data && data.user) {
-          setUser(data.user);
-        }
-      })
-      .catch((err) => console.error("Failed to fetch user:", err))
-      .finally(() => setLoading(false));
-  }, [router]);
+    if (userData && userData.user) {
+      setUser(userData.user);
+    } else if (error && error.message === "Unauthorized") {
+      router.push("/");
+    }
+  }, [userData, error, router]);
+
+  const loading = userLoading && !user; 
 
   const handleSignOut = async () => {
     try {
+      clearApiCache();
       await fetch("/api/auth/logout", { method: "POST" });
       router.push("/");
     } catch (error) {

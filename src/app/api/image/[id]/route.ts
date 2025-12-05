@@ -2,6 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { images } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { unstable_cache } from "next/cache";
+
+const getImageRecord = async (id: string) => {
+  return await db.query.images.findFirst({
+    where: eq(images.id, id),
+  });
+};
+
+const getCachedImageRecord = (id: string) =>
+  unstable_cache(
+    async () => getImageRecord(id),
+    [`image-${id}`],
+    {
+      tags: [`image-${id}`],
+      revalidate: 86400 
+    }
+  )();
 
 export async function GET(
   req: NextRequest,
@@ -9,9 +26,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const imageRecord = await db.query.images.findFirst({
-      where: eq(images.id, id),
-    });
+    const imageRecord = await getCachedImageRecord(id);
 
     if (!imageRecord) {
       return new NextResponse("Image not found", { status: 404 });

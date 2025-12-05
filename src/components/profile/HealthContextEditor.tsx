@@ -16,6 +16,8 @@ interface HealthContext {
   gender: string;
 }
 
+import { useCachedFetch } from "@/hooks/use-fetch-cache";
+
 export function HealthContextEditor() {
   const [context, setContext] = useState<HealthContext>({
     allergies: [],
@@ -29,38 +31,21 @@ export function HealthContextEditor() {
     conditions: "",
     medications: ""
   });
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const fetchContext = useCallback(async () => {
-    try {
-      const refreshRes = await fetch("/api/auth/refresh", { method: "POST" });
-      if (!refreshRes.ok) return;
-      const { token } = await refreshRes.json();
-
-      const res = await fetch("/api/health-context", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.context) {
-        setContext({
-          allergies: data.context.allergies || [],
-          conditions: data.context.conditions || [],
-          medications: data.context.medications || [],
-          additionalNotes: data.context.additionalNotes || "",
-          gender: data.context.gender || "male",
-        });
-      }
-    } catch (err) {
-      console.error("Failed to fetch context", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const { data: fetchedData, loading, refresh } = useCachedFetch<{ context: HealthContext }>("/api/health-context", { withAuth: true });
 
   useEffect(() => {
-    fetchContext();
-  }, [fetchContext]);
+    if (fetchedData && fetchedData.context) {
+      setContext({
+        allergies: fetchedData.context.allergies || [],
+        conditions: fetchedData.context.conditions || [],
+        medications: fetchedData.context.medications || [],
+        additionalNotes: fetchedData.context.additionalNotes || "",
+        gender: fetchedData.context.gender || "male",
+      });
+    }
+  }, [fetchedData]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -76,6 +61,7 @@ export function HealthContextEditor() {
         },
         body: JSON.stringify(context),
       });
+      refresh();
     } catch (err) {
       console.error("Failed to save context", err);
     } finally {

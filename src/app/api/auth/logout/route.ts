@@ -20,3 +20,18 @@ export async function GET(req: NextRequest) {
   
   return NextResponse.redirect(new URL("/", req.url));
 }
+export async function POST(req: NextRequest) {
+  const cookieStore = await cookies();
+  const refreshTokenCookie = cookieStore.get("refresh_token")?.value;
+
+  if (refreshTokenCookie) {
+    const [tokenId] = refreshTokenCookie.split(":");
+    if (tokenId) {
+      await db.delete(refreshTokens).where(eq(refreshTokens.id, tokenId));
+    }
+  }
+
+  await clearCookies();
+  
+  return NextResponse.json({ success: true });
+}

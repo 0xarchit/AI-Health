@@ -20,6 +20,8 @@ interface Scan {
   imageUrl?: string | null;
 }
 
+import { useCachedFetch, clearApiCache } from "@/hooks/use-fetch-cache";
+
 export default function Dashboard() {
   const [gender, setGender] = useState<'male' | 'female'>(() => {
     if (typeof window !== 'undefined') {
@@ -31,29 +33,34 @@ export default function Dashboard() {
   useEffect(() => {
     localStorage.setItem('selectedGender', gender);
   }, [gender]);
+
   const { modelUrl, progress, loading: modelLoading, downloading, startDownload, deleteModel, serverStatus, checkServerStatus } = useModelLoader(gender);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  
+  
+  const { data: userData } = useCachedFetch<{ user: any }>("/api/user");
+  const user = userData?.user;
+
+  
+  const { data: historyData, refresh: refreshHistory } = useCachedFetch<{ scans: Scan[] }>("/api/history");
+  const [history, setHistory] = useState<Scan[]>([]);
 
   useEffect(() => {
-    fetch("/api/user")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.user) {
-          setUser(data.user);
-        }
-      })
-      .catch((err) => console.error("Failed to fetch user:", err));
-  }, []);
+    if (historyData?.scans) {
+      setHistory(historyData.scans);
+    }
+  }, [historyData]);
+
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const [history, setHistory] = useState<Scan[]>([]);
   const [hasSkippedModel, setHasSkippedModel] = useState(false);
   const router = useRouter();
+
   const handleSignOut = async () => {
     try {
+      clearApiCache();
       await fetch("/api/auth/logout", { method: "POST" });
       router.push("/");
     } catch (error) {
@@ -61,32 +68,8 @@ export default function Dashboard() {
     }
   };
 
-  const fetchHistory = async () => {
-    try {
-      let res = await fetch("/api/history");
-      
-      if (res.status === 401) {
-        const refreshRes = await fetch("/api/auth/refresh", { method: "POST" });
-        if (refreshRes.ok) {
-           res = await fetch("/api/history");
-        } else {
-           router.push("/");
-           return;
-        }
-      }
-
-      if (res.ok) {
-        const data = await res.json();
-        setHistory(data.scans);
-      }
-    } catch (e) {
-      console.error("Failed to fetch history", e);
-    }
-  };
-
-  useEffect(() => {
-    fetchHistory();
-  }, []);
+  
+  const fetchHistory = refreshHistory;
 
 
 
@@ -139,7 +122,7 @@ export default function Dashboard() {
       if (!analyzeRes.ok) throw new Error(data.error || "Analysis failed");
 
       setResult(data.nutrition);
-      fetchHistory();
+      refreshHistory();
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -148,6 +131,7 @@ export default function Dashboard() {
   };
 
   const handleLogout = async () => {
+    clearApiCache();
     await fetch("/api/auth/logout");
     router.push("/");
   };
@@ -310,7 +294,7 @@ export default function Dashboard() {
                }}
                onClearHistory={async () => {
                  await fetch("/api/history", { method: "DELETE" });
-                 setHistory([]);
+                 refreshHistory();
                }}
              />
 
