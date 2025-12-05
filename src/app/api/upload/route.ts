@@ -2,7 +2,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifySessionToken } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { images } from "@/db/schema";
+import { images, scans } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
 
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get("Authorization");
@@ -22,6 +23,27 @@ export async function POST(req: NextRequest) {
 
   if (!file) {
     return NextResponse.json({ error: "No image provided" }, { status: 400 });
+  }
+
+  const fileBuffer = Buffer.from(await file.arrayBuffer());
+  const crypto = require('crypto');
+  const hashSum = crypto.createHash('sha256');
+  hashSum.update(fileBuffer);
+  const hexHash = hashSum.digest('hex');
+  const existingScan = await db.query.scans.findFirst({
+    where: and(
+      eq(scans.userId, session.userId),
+      eq(scans.imageHash, hexHash)
+    ),
+  });
+
+  if (existingScan && existingScan.imageUrl) {
+    console.log("Duplicate upload found via hash, returning existing URL.");
+    return NextResponse.json({ 
+      success: true, 
+      url: existingScan.imageUrl,
+      cached: true
+    });
   }
 
   const privateKey = process.env.IMG_PVT_API_KEY;

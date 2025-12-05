@@ -250,6 +250,7 @@ export default function Dashboard() {
                    await fetch("/api/history", { method: "DELETE" });
                    refreshHistory();
                  }}
+                 onRefresh={refreshHistory}
               />
             </div>
           </div>

@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { History, Image as ImageIcon, Check } from "lucide-react";
+import { History, Image as ImageIcon, Check, RefreshCcw } from "lucide-react";
 
 interface Scan {
   id: string;
@@ -16,9 +16,10 @@ interface ScanHistoryProps {
   history: Scan[];
   onSelectScan: (scan: Scan) => void;
   onClearHistory: () => Promise<void>;
+  onRefresh: () => void;
 }
 
-export function ScanHistory({ history, onSelectScan, onClearHistory }: ScanHistoryProps) {
+export function ScanHistory({ history, onSelectScan, onClearHistory, onRefresh }: ScanHistoryProps) {
   return (
     <Card>
       <CardHeader className="pb-3 flex flex-row items-center justify-between">
@@ -26,20 +27,31 @@ export function ScanHistory({ history, onSelectScan, onClearHistory }: ScanHisto
           <History className="w-5 h-5 text-muted-foreground" />
           Recent Scans
         </CardTitle>
-        {history.length > 0 && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={async () => {
-              if (confirm("Are you sure you want to clear your scan history?")) {
-                await onClearHistory();
-              }
-            }} 
-            className="text-xs text-muted-foreground hover:text-destructive h-8"
-          >
-            Clear
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+           <Button 
+             variant="ghost" 
+             size="sm" 
+             onClick={onRefresh}
+             className="text-xs text-muted-foreground hover:text-primary h-8 gap-1"
+           >
+             <RefreshCcw className="w-3 h-3" />
+             Refresh
+           </Button>
+           {history.length > 0 && (
+             <Button 
+               variant="ghost" 
+               size="sm" 
+               onClick={async () => {
+                 if (confirm("Are you sure you want to clear your scan history?")) {
+                   await onClearHistory();
+                 }
+               }} 
+               className="text-xs text-muted-foreground hover:text-destructive h-8"
+             >
+               Clear
+             </Button>
+           )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
         {history.length === 0 ? (
