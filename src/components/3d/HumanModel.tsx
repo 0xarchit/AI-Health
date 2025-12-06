@@ -460,7 +460,7 @@ export default function HumanModel({
           </p>
         </div>
 
-        {!hasAnalyzed && serverStatus === "available" && (
+        {!hasAnalyzed && serverStatus !== "unavailable" && (
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none w-full px-4">
             <div className="backdrop-blur-sm border border-border px-6 py-4 rounded-xl text-center shadow-lg bg-background/80">
               <h3 className="font-bold text-xl mb-1 flex items-center justify-center gap-2 text-foreground">

@@ -32,6 +32,7 @@ import { useCachedFetch, clearApiCache } from "@/hooks/use-fetch-cache";
 import { useAuthStatus } from "@/hooks/use-auth-status";
 import { fetchWithAuth } from "@/lib/api-client";
 import { AppLogo } from "@/components/ui/app-logo";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import Link from "next/link";
 
 interface Scan {
@@ -43,6 +44,7 @@ interface Scan {
 }
 
 export default function Dashboard() {
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const [gender, setGender] = useState<"male" | "female">(() => {
     if (typeof window !== "undefined") {
       return (
@@ -220,11 +222,19 @@ export default function Dashboard() {
             <GlowingButton
               variant="outline"
               size="icon"
-              onClick={handleLogout}
+              onClick={() => setIsLogoutDialogOpen(true)}
               className="h-10 w-10 border-destructive/30 text-destructive hover:bg-destructive/10"
             >
               <LogOut className="w-5 h-5" />
             </GlowingButton>
+            <ConfirmDialog 
+                isOpen={isLogoutDialogOpen}
+                onClose={() => setIsLogoutDialogOpen(false)}
+                onConfirm={handleLogout}
+                title="Disconnect from System?"
+                description="You are about to terminate your secure session. All unsaved interactions will be closed."
+                variant="destructive"
+            />
           </div>
         </header>
 
