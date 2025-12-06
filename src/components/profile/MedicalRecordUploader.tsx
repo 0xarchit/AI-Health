@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Upload, Loader2, FileText, AlertCircle } from "lucide-react";
 import { useDropzone } from "react-dropzone";
+import { fetchWithAuth } from "@/lib/api-client";
 
 export function MedicalRecordUploader({ onUploadSuccess }: { onUploadSuccess: () => void }) {
   const [file, setFile] = useState<File | null>(null);
@@ -37,16 +38,12 @@ export function MedicalRecordUploader({ onUploadSuccess }: { onUploadSuccess: ()
     setError(null);
 
     try {
-      const refreshRes = await fetch("/api/auth/refresh", { method: "POST" });
-      if (!refreshRes.ok) throw new Error("Session expired");
-      const { token } = await refreshRes.json();
-
+      
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await fetch("/api/medical-records/upload", {
+      const res = await fetchWithAuth("/api/medical-records/upload", {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
 

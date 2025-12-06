@@ -4,11 +4,5 @@ import { cookies } from "next/headers";
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-  const cookieStore = await cookies();
-  const sessionToken = cookieStore.get("session_token");
-  const refreshToken = cookieStore.get("refresh_token");
-
-  const isLoggedIn = !!(sessionToken || refreshToken);
-
-  return <LandingPage isLoggedIn={isLoggedIn} />;
+  return <LandingPage />;
 }

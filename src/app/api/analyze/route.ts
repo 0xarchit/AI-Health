@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
-import { verifySessionToken } from "@/lib/auth";
+import { validateRequest } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { users, scans, healthContext, medicalRecords } from "@/db/schema";
 import { decrypt } from "@/lib/security";
@@ -9,16 +9,9 @@ import path, { join } from "path";
 import { OAuth2Client } from "google-auth-library";
 
 export async function POST(req: NextRequest) {
-  const authHeader = req.headers.get("Authorization");
-  const token = authHeader?.split(" ")[1];
-
-  if (!token) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const session = await verifySessionToken(token);
+  const session = await validateRequest();
   if (!session) {
-    return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const formData = await req.formData();
@@ -256,6 +249,12 @@ export async function POST(req: NextRequest) {
     if (err.message && (err.message.includes("invalid_grant") || err.message.includes("tokens.refresh_token is missing"))) {
       return NextResponse.json({ error: "Google session expired. Please logout and login again." }, { status: 401 });
     }
-    return NextResponse.json({ error: err.message || "Analysis failed" }, { status: 500 });
+    
+    let status = 500;
+    if (err.message.includes("quota") || err.message.includes("429")) status = 429;
+    else if (err.message.includes("overloaded") || err.message.includes("503")) status = 503;
+    else if (err.message.includes("Permission denied")) status = 403;
+
+    return NextResponse.json({ error: err.message || "Analysis failed" }, { status });
   }
 }

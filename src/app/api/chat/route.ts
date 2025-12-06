@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifySessionToken } from "@/lib/auth";
+import { validateRequest } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { users, healthContext, medicalRecords } from "@/db/schema";
 import { decrypt } from "@/lib/security";
@@ -8,16 +8,9 @@ import { OAuth2Client } from "google-auth-library";
 import { unstable_cache } from "next/cache";
 
 export async function POST(req: NextRequest) {
-  const authHeader = req.headers.get("Authorization");
-  const token = authHeader?.split(" ")[1];
-
-  if (!token) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const session = await verifySessionToken(token);
+  const session = await validateRequest();
   if (!session) {
-    return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { message, foodContext } = await req.json();
@@ -51,7 +44,7 @@ export async function POST(req: NextRequest) {
         [`health-context-${userId}`],
         {
           tags: [`health-context-${userId}`],
-          revalidate: 3600
+          revalidate: 300
         }
       )();
 
@@ -68,7 +61,7 @@ export async function POST(req: NextRequest) {
         
         {
           tags: [`medical-records-${userId}`], 
-          revalidate: 3600
+          revalidate: 300
         }
       )();
 
@@ -140,6 +133,12 @@ export async function POST(req: NextRequest) {
 
   } catch (err: any) {
     console.error("Chat Error:", err);
-    return NextResponse.json({ error: err.message || "Chat failed" }, { status: 500 });
+    
+    let status = 500;
+    if (err.message.includes("quota") || err.message.includes("429")) status = 429;
+    else if (err.message.includes("overloaded") || err.message.includes("503")) status = 503;
+    else if (err.message.includes("Permission denied")) status = 403;
+
+    return NextResponse.json({ error: err.message || "Chat failed" }, { status });
   }
 }

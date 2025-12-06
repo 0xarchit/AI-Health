@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifySessionToken } from "@/lib/auth";
+import { validateRequest } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { medicalRecords } from "@/db/schema";
 import { eq, desc, and } from "drizzle-orm";
@@ -18,21 +18,14 @@ const getCachedMedicalRecords = (userId: string) =>
     [`medical-records-${userId}`],
     {
       tags: [`medical-records-${userId}`],
-      revalidate: 3600 
+      revalidate: 300 
     }
   )();
 
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get("Authorization");
-  const token = authHeader?.split(" ")[1];
-
-  if (!token) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const session = await verifySessionToken(token);
+  const session = await validateRequest();
   if (!session) {
-    return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
@@ -42,7 +35,7 @@ export async function GET(req: NextRequest) {
       { records },
       {
         headers: {
-          "Cache-Control": "public, max-age=60, stale-while-revalidate=30",
+          "Cache-Control": "public, max-age=900, stale-while-revalidate=60",
         },
       }
     );
@@ -53,16 +46,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const authHeader = req.headers.get("Authorization");
-  const token = authHeader?.split(" ")[1];
-
-  if (!token) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const session = await verifySessionToken(token);
+  const session = await validateRequest();
   if (!session) {
-    return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { searchParams } = new URL(req.url);
@@ -83,16 +69,9 @@ export async function DELETE(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const authHeader = req.headers.get("Authorization");
-  const token = authHeader?.split(" ")[1];
-
-  if (!token) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const session = await verifySessionToken(token);
+  const session = await validateRequest();
   if (!session) {
-    return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {

@@ -14,6 +14,7 @@ interface MedicalRecord {
 }
 
 import { useCachedFetch } from "@/hooks/use-fetch-cache";
+import { fetchWithAuth } from "@/lib/api-client";
 
 export function MedicalRecordList({ refreshTrigger }: { refreshTrigger: number }) {
   const { data: fetchedData, loading, refresh } = useCachedFetch<{ records: MedicalRecord[] }>("/api/medical-records", { withAuth: true });
@@ -37,12 +38,8 @@ export function MedicalRecordList({ refreshTrigger }: { refreshTrigger: number }
     if (!confirm("Are you sure you want to delete this record?")) return;
     
     try {
-      const refreshRes = await fetch("/api/auth/refresh", { method: "POST" });
-      const { token } = await refreshRes.json();
-
-      await fetch(`/api/medical-records?id=${id}`, {
+      await fetchWithAuth(`/api/medical-records?id=${id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
       });
       refresh();
     } catch (err) {
@@ -62,13 +59,9 @@ export function MedicalRecordList({ refreshTrigger }: { refreshTrigger: number }
 
   const handleUpdate = async (id: string) => {
     try {
-      const refreshRes = await fetch("/api/auth/refresh", { method: "POST" });
-      const { token } = await refreshRes.json();
-
-      await fetch("/api/medical-records", {
+      await fetchWithAuth("/api/medical-records", {
         method: "PATCH",
         headers: { 
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({ id, summary: editSummary }),

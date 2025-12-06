@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { fetchWithAuth } from "@/lib/api-client";
 
 interface CacheItem<T> {
   data: T;
@@ -8,18 +9,17 @@ interface CacheItem<T> {
 const CACHE_DURATION = 60 * 60 * 1000; 
 
 interface UseCachedFetchOptions extends RequestInit {
-  withAuth?: boolean;
+  withAuth?: boolean; 
 }
-
-let refreshPromise: Promise<Response> | null = null;
-let isRefreshing = false;
 
 export function useCachedFetch<T>(url: string, options?: UseCachedFetchOptions) {
   const [data, setData] = useState<T | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!!url);
   const [error, setError] = useState<Error | null>(null);
 
   const fetchData = useCallback(async (force = false) => {
+    if (!url) return;
+    
     setLoading(true);
     setError(null);
 
@@ -36,42 +36,7 @@ export function useCachedFetch<T>(url: string, options?: UseCachedFetchOptions) 
         }
       }
 
-      let fetchOptions = { ...options };
-      
-      
-      if (options?.withAuth) {
-        try {
-          if (!refreshPromise) {
-            refreshPromise = fetch("/api/auth/refresh", { 
-              method: "POST",
-              credentials: "include" 
-            }).then(res => {
-              setTimeout(() => { refreshPromise = null; }, 1000); 
-              return res;
-            }).catch(err => {
-              refreshPromise = null;
-              throw err;
-            });
-          }
-          
-          const refreshRes = await refreshPromise;
-          const resClone = refreshRes.clone();
-
-          if (resClone.ok) {
-            const { token } = await resClone.json();
-            const headers = new Headers(fetchOptions.headers);
-            headers.set("Authorization", `Bearer ${token}`);
-            fetchOptions.headers = headers;
-          } else {
-             throw new Error("Unauthorized");
-          }
-        } catch (e) {
-           console.warn("Token refresh failed", e);
-           throw new Error("Unauthorized");
-        }
-      }
-
-      
+      const fetchOptions = { ...options };
       delete (fetchOptions as any).withAuth;
 
       if (force) {
@@ -79,38 +44,8 @@ export function useCachedFetch<T>(url: string, options?: UseCachedFetchOptions) 
       }
 
       
-      
-      let res = await fetch(url, fetchOptions);
+      const res = await fetchWithAuth(url, fetchOptions);
 
-      
-      if (res.status === 401) {
-         if (!isRefreshing) {
-            isRefreshing = true;
-            try {
-               const refreshRes = await fetch("/api/auth/refresh", { 
-                  method: "POST",
-               });
-               
-               if (refreshRes.ok) {
-                  const { token } = await refreshRes.json();
-                  
-                  
-                  
-                  res = await fetch(url, fetchOptions);
-               } else {
-                  throw new Error("Unauthorized");
-               }
-            } catch (refreshErr) {
-               throw new Error("Unauthorized");
-            } finally {
-               isRefreshing = false;
-            }
-         } else {
-            
-             throw new Error("Unauthorized");
-         }
-      }
-      
       if (res.status === 401) {
         throw new Error("Unauthorized");
       }
@@ -155,13 +90,15 @@ export function useCachedFetch<T>(url: string, options?: UseCachedFetchOptions) 
 export function clearApiCache() {
   if (typeof window === 'undefined') return;
   
-  const keysToRemove: string[] = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key && key.startsWith('cache-')) {
-      keysToRemove.push(key);
-    }
+  try {
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      if (key && key.startsWith('cache-')) {
+        localStorage.removeItem(key);
+      }
+    });
+    console.log("API Cache cleared");
+  } catch (e) {
+    console.error("Failed to clear API cache", e);
   }
-  
-  keysToRemove.forEach(key => localStorage.removeItem(key));
 }

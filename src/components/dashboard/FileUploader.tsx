@@ -16,6 +16,7 @@ interface FileUploaderProps {
   setFile: (file: File | null) => void;
   preview: string | null;
   setPreview: (preview: string | null) => void;
+  onReset: () => void;
 }
 
 export function FileUploader({ 
@@ -27,7 +28,8 @@ export function FileUploader({
   file,
   setFile,
   preview,
-  setPreview
+  setPreview,
+  onReset
 }: FileUploaderProps) {
   const [error, setError] = useState<string | null>(null);
 
@@ -60,8 +62,7 @@ export function FileUploader({
   };
 
   const handleClear = () => {
-    setFile(null);
-    setPreview(null);
+    onReset();
     setError(null);
   };
 

@@ -17,6 +17,7 @@ interface HealthContext {
 }
 
 import { useCachedFetch } from "@/hooks/use-fetch-cache";
+import { fetchWithAuth } from "@/lib/api-client";
 
 export function HealthContextEditor() {
   const [context, setContext] = useState<HealthContext>({
@@ -50,13 +51,9 @@ export function HealthContextEditor() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const refreshRes = await fetch("/api/auth/refresh", { method: "POST" });
-      const { token } = await refreshRes.json();
-
-      await fetch("/api/health-context", {
+      await fetchWithAuth("/api/health-context", {
         method: "POST",
         headers: { 
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify(context),

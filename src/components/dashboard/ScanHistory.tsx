@@ -1,8 +1,8 @@
-"use client";
-
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { History, Image as ImageIcon, Check, RefreshCcw } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface Scan {
   id: string;
@@ -20,7 +20,10 @@ interface ScanHistoryProps {
 }
 
 export function ScanHistory({ history, onSelectScan, onClearHistory, onRefresh }: ScanHistoryProps) {
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+
   return (
+    <>
     <Card>
       <CardHeader className="pb-3 flex flex-row items-center justify-between">
         <CardTitle className="text-lg flex items-center gap-2">
@@ -41,11 +44,7 @@ export function ScanHistory({ history, onSelectScan, onClearHistory, onRefresh }
              <Button 
                variant="ghost" 
                size="sm" 
-               onClick={async () => {
-                 if (confirm("Are you sure you want to clear your scan history?")) {
-                   await onClearHistory();
-                 }
-               }} 
+               onClick={() => setShowClearConfirm(true)}
                className="text-xs text-muted-foreground hover:text-destructive h-8"
              >
                Clear
@@ -74,7 +73,7 @@ export function ScanHistory({ history, onSelectScan, onClearHistory, onRefresh }
                     <ImageIcon className="w-6 h-6 text-primary" />
                   )}
                 </div>
-                {}
+                
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border border-background flex items-center justify-center z-10">
                    <Check className="w-2 h-2 text-white" />
                 </div>
@@ -88,5 +87,15 @@ export function ScanHistory({ history, onSelectScan, onClearHistory, onRefresh }
         )}
       </CardContent>
     </Card>
+
+    <ConfirmDialog 
+      isOpen={showClearConfirm}
+      onClose={() => setShowClearConfirm(false)}
+      onConfirm={onClearHistory}
+      title="Clear Scan History?"
+      description="This action cannot be undone. This will permanently delete your scan history and associated data."
+      variant="destructive"
+    />
+    </>
   );
 }

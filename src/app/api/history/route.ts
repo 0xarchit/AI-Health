@@ -47,7 +47,9 @@ export async function GET(req: NextRequest) {
       { scans: userScans },
       {
         headers: {
-          "Cache-Control": "public, max-age=60, stale-while-revalidate=30",
+          "Cache-Control": "private, no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0"
         },
       }
     );

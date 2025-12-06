@@ -21,6 +21,13 @@ export async function verifySessionToken(token: string): Promise<{ userId: strin
   }
 }
 
+export async function validateRequest() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("session_token")?.value;
+  if (!token) return null;
+  return verifySessionToken(token);
+}
+
 export async function setAuthCookie(token: string) {
   const cookieStore = await cookies();
   cookieStore.set("session_token", token, {
@@ -30,13 +37,7 @@ export async function setAuthCookie(token: string) {
     path: "/",
     maxAge: 15 * 60, 
   });
-  cookieStore.set("auth_status", "true", {
-    httpOnly: false,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    path: "/",
-    maxAge: 15 * 60,
-  });
+
 }
 
 export async function setRefreshCookie(id: string, token: string) {
@@ -45,14 +46,14 @@ export async function setRefreshCookie(id: string, token: string) {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
-    path: "/",
+    path: "/api/auth",
     maxAge: 30 * 24 * 60 * 60, 
   });
 }
 
 export async function clearCookies() {
   const cookieStore = await cookies();
-  cookieStore.delete("session_token");
-  cookieStore.delete("refresh_token");
-  cookieStore.delete("auth_status");
+  cookieStore.delete({ name: "session_token", path: "/" });
+  cookieStore.delete({ name: "refresh_token", path: "/api/auth" });
+
 }

@@ -10,21 +10,13 @@ import { useEffect } from "react";
 import { GlowingButton, NeonSeparator } from "@/components/ui/design-system";
 import { AtmosphericBackground } from "@/components/ui/atmospheric-background";
 
-interface LandingPageProps {
-  isLoggedIn: boolean;
-}
+import { useAuthStatus } from "@/hooks/use-auth-status";
 
-export default function LandingPage({ isLoggedIn }: LandingPageProps) {
+interface LandingPageProps {}
+
+export default function LandingPage({}: LandingPageProps) {
+  const { isAuthenticated } = useAuthStatus(false);
   const router = useRouter();
-
-  useEffect(() => {
-    if (!isLoggedIn) {
-      const hasAuthStatus = document.cookie.includes("auth_status=true");
-      if (hasAuthStatus) {
-        router.refresh();
-      }
-    }
-  }, [isLoggedIn, router]);
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-hidden selection:bg-emerald-500/30 relative">
@@ -42,7 +34,7 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
         </div>
         <div className="flex items-center gap-4">
           <ModeToggle />
-          {isLoggedIn ? (
+          {isAuthenticated ? (
             <Button asChild variant="outline" className="h-10 text-sm rounded-full border-emerald-500/20 hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all">
               <Link href="/dashboard">Enter Dashboard</Link>
             </Button>
@@ -106,7 +98,7 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
           transition={{ duration: 0.8, delay: 0.6 }}
           className="flex flex-col sm:flex-row items-center justify-center gap-6 w-full max-w-md mx-auto"
         >
-          {isLoggedIn ? (
+          {isAuthenticated ? (
              <Button size="lg" className="w-full text-lg h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_20px_-5px_rgba(16,185,129,0.4)] transition-all group duration-300" asChild>
                <Link href="/dashboard">
                  Initialize Scan 

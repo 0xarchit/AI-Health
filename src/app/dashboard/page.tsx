@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Trash2, Download, Box, Utensils, ArrowLeft, RotateCcw, Activity, Info, LogOut } from "lucide-react";
 import { useModelLoader, ModelDownloading, ModelDownloadPrompt } from "@/components/ModelLoader";
 import { ModeToggle } from "@/components/mode-toggle";
+import { ErrorToast } from "@/components/ui/error-toast";
 import HumanModel from "@/components/3d/HumanModel";
 import { FileUploader } from "@/components/dashboard/FileUploader";
 import { AnalysisResult } from "@/components/dashboard/AnalysisResult";
@@ -14,6 +15,8 @@ import { ChatBot } from "@/components/dashboard/ChatBot";
 import { SurfacePanel, GlassPanel, NeonSeparator, GlowingButton } from "@/components/ui/design-system";
 import { AtmosphericBackground } from "@/components/ui/atmospheric-background";
 import { useCachedFetch, clearApiCache } from "@/hooks/use-fetch-cache";
+import { useAuthStatus } from "@/hooks/use-auth-status";
+import { fetchWithAuth } from "@/lib/api-client";
 import { AppLogo } from "@/components/ui/app-logo";
 import Link from "next/link";
 
@@ -42,10 +45,13 @@ export default function Dashboard() {
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   
-  const { data: userData } = useCachedFetch<{ user: any }>("/api/user");
+  const { isAuthenticated } = useAuthStatus(true);
+  const router = useRouter();
+
+  const { data: userData } = useCachedFetch<{ user: any }>(isAuthenticated ? "/api/user" : "");
   const user = userData?.user;
 
-  const { data: historyData, refresh: refreshHistory } = useCachedFetch<{ scans: Scan[] }>("/api/history");
+  const { data: historyData, refresh: refreshHistory } = useCachedFetch<{ scans: Scan[] }>(user ? "/api/history" : "");
   const [history, setHistory] = useState<Scan[]>([]);
 
   useEffect(() => {
@@ -57,30 +63,22 @@ export default function Dashboard() {
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasSkippedModel, setHasSkippedModel] = useState(false);
-  const router = useRouter();
 
-  const handleAnalyze = async () => {
-    if (!file) return;
+  const handleAnalyze = async (uploadedFile: File) => {
+    if (!uploadedFile) return;
 
     setLoading(true);
     setError(null);
+    setFile(uploadedFile); 
 
     try {
-      const refreshRes = await fetch("/api/auth/refresh", { method: "POST" });
-      if (!refreshRes.ok) {
-        router.push("/");
-        return;
-      }
-      const { token } = await refreshRes.json();
-
+      
       const uploadFormData = new FormData();
-      uploadFormData.append("image", file);
+      uploadFormData.append("image", uploadedFile);
 
-      const uploadRes = await fetch("/api/upload", {
+      
+      const uploadRes = await fetchWithAuth("/api/upload", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
         body: uploadFormData,
       });
 
@@ -92,15 +90,12 @@ export default function Dashboard() {
       const imageUrl = uploadData.url;
 
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", uploadedFile);
       formData.append("gender", gender);
       formData.append("imageUrl", imageUrl);
 
-      const analyzeRes = await fetch("/api/analyze", {
+      const analyzeRes = await fetchWithAuth("/api/analyze", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
         body: formData,
       });
 
@@ -221,6 +216,7 @@ export default function Dashboard() {
                     setFile={setFile}
                     preview={preview}
                     setPreview={setPreview}
+                    onReset={handleClear}
                  />
                </div>
             </SurfacePanel>
@@ -340,6 +336,7 @@ export default function Dashboard() {
         
         {}
         <ChatBot foodContext={result} />
+        <ErrorToast message={error} onClose={() => setError(null)} />
       </div>
     </div>
   );

@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { GlassPanel } from "@/components/ui/design-system";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
+import { fetchWithAuth } from "@/lib/api-client";
 import remarkGfm from "remark-gfm";
 
 interface Message {
@@ -48,7 +49,7 @@ export function ChatBot({ foodContext }: ChatBotProps) {
     try {
 
       
-      let res = await fetch("/api/chat", {
+      let res = await fetchWithAuth("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -56,32 +57,6 @@ export function ChatBot({ foodContext }: ChatBotProps) {
            foodContext
         }),
       });
-
-      
-      if (res.status === 401) {
-         try {
-           const refreshRes = await fetch("/api/auth/refresh", { method: "POST" });
-           if (refreshRes.ok) {
-              const { token } = await refreshRes.json();
-              
-              res = await fetch("/api/chat", {
-                method: "POST",
-                headers: { 
-                   "Content-Type": "application/json",
-                   "Authorization": `Bearer ${token}` 
-                },
-                body: JSON.stringify({
-                   message: userMessage.content,
-                   foodContext
-                }),
-              });
-           } else {
-             throw new Error("Session expired. Please login again.");
-           }
-         } catch (refreshErr) {
-            throw new Error("Session expired. Please login again.");
-         }
-      }
 
       if (!res.ok) throw new Error("Failed to fetch response");
 

@@ -11,10 +11,12 @@ import { SurfacePanel, GlassPanel, NeonSeparator, GlowingButton } from "@/compon
 import { AtmosphericBackground } from "@/components/ui/atmospheric-background";
 import { useCachedFetch, clearApiCache } from "@/hooks/use-fetch-cache";
 import { AppLogo } from "@/components/ui/app-logo";
+import { useAuthStatus } from "@/hooks/use-auth-status";
 import Link from "next/link";
 
 export default function ProfilePage() {
-  const { data: userData, loading: userLoading, error } = useCachedFetch<{ user: any }>("/api/user");
+  const { isAuthenticated } = useAuthStatus(true);
+  const { data: userData, loading: userLoading, error } = useCachedFetch<{ user: any }>(isAuthenticated ? "/api/user" : "");
   const [user, setUser] = useState<any>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const router = useRouter();
@@ -22,10 +24,8 @@ export default function ProfilePage() {
   useEffect(() => {
     if (userData && userData.user) {
       setUser(userData.user);
-    } else if (error && error.message === "Unauthorized") {
-      router.push("/");
     }
-  }, [userData, error, router]);
+  }, [userData]);
 
   const loading = userLoading && !user; 
 
