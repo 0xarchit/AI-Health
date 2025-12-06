@@ -1,8 +1,7 @@
 import LandingPageAurora from "@/components/landing-page-aurora";
-import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
-export default async function Page() {
+export default function Page() {
   return <LandingPageAurora />;
 }

@@ -7,7 +7,11 @@ import { Upload, Loader2, FileText, AlertCircle } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { fetchWithAuth } from "@/lib/api-client";
 
-export function MedicalRecordUploader({ onUploadSuccess }: { onUploadSuccess: () => void }) {
+export function MedicalRecordUploader({
+  onUploadSuccess,
+}: {
+  onUploadSuccess: () => void;
+}) {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +42,6 @@ export function MedicalRecordUploader({ onUploadSuccess }: { onUploadSuccess: ()
     setError(null);
 
     try {
-      
       const formData = new FormData();
       formData.append("file", file);
 
@@ -62,7 +65,7 @@ export function MedicalRecordUploader({ onUploadSuccess }: { onUploadSuccess: ()
   };
 
   return (
-    <Card>
+    <Card className="bg-transparent border-none shadow-none">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <FileText className="w-5 h-5 text-primary" />
@@ -73,13 +76,19 @@ export function MedicalRecordUploader({ onUploadSuccess }: { onUploadSuccess: ()
         <div
           {...getRootProps()}
           className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors
-            ${isDragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"}`}
+            ${
+              isDragActive
+                ? "border-primary bg-primary/5"
+                : "border-muted-foreground/25 hover:border-primary/50"
+            }`}
         >
           <input {...getInputProps()} />
           <div className="flex flex-col items-center gap-2">
             <Upload className="w-8 h-8 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              {file ? file.name : "Drop medical record image here, or click to select"}
+              {file
+                ? file.name
+                : "Drop medical record image here, or click to select"}
             </p>
           </div>
         </div>
@@ -91,9 +100,9 @@ export function MedicalRecordUploader({ onUploadSuccess }: { onUploadSuccess: ()
           </div>
         )}
 
-        <Button 
-          onClick={handleUpload} 
-          disabled={!file || loading} 
+        <Button
+          onClick={handleUpload}
+          disabled={!file || loading}
           className="w-full"
         >
           {loading ? (

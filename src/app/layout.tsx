@@ -17,9 +17,10 @@ export const metadata: Metadata = {
   description: "Analyze your food with AI Health",
 };
 
-import { ThemeProvider } from "@/components/theme-provider"
-import { ModeToggle } from "@/components/mode-toggle"
-import { Footer } from "@/components/Footer"
+import { ThemeProvider } from "@/components/theme-provider";
+import { ModeToggle } from "@/components/mode-toggle";
+import { Footer } from "@/components/Footer";
+import { AppBackground } from "@/components/AppBackground";
 
 export default function RootLayout({
   children,
@@ -32,14 +33,17 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AppBackground />
+          <div className="relative z-10 min-h-screen flex flex-col">
             {children}
             <Footer />
-          </ThemeProvider>
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -4,7 +4,7 @@ import { ArrowLeft, Github, Globe, Heart } from "lucide-react";
 
 export default function CopyrightPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-transparent">
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl">
@@ -33,10 +33,14 @@ export default function CopyrightPage() {
           </div>
           <div className="bg-card/50 border rounded-xl p-6 space-y-4">
             <p className="text-muted-foreground">
-              AI Health is an open-source project. You can view the source code, contribute, or report issues on GitHub.
+              AI Health is an open-source project. You can view the source code,
+              contribute, or report issues on GitHub.
             </p>
             <Button asChild variant="outline" className="gap-2">
-              <Link href="https://github.com/0xarchit/AI-Health" target="_blank">
+              <Link
+                href="https://github.com/0xarchit/AI-Health"
+                target="_blank"
+              >
                 <Github className="w-4 h-4" /> View on GitHub
               </Link>
             </Button>
@@ -50,7 +54,8 @@ export default function CopyrightPage() {
           </div>
           <div className="bg-card/50 border rounded-xl p-6 space-y-4">
             <p className="text-muted-foreground">
-              Developed by <strong>0xarchit</strong>. Check out my portfolio for more projects.
+              Developed by <strong>0xarchit</strong>. Check out my portfolio for
+              more projects.
             </p>
             <Button asChild variant="outline" className="gap-2">
               <Link href="https://0xarchit.is-a.dev" target="_blank">
@@ -66,19 +71,29 @@ export default function CopyrightPage() {
             <div className="bg-card/50 border rounded-xl p-6">
               <h3 className="font-semibold mb-2">Image Hosting</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Powered by <strong>ImageKit.io</strong> for fast and secure image delivery.
+                Powered by <strong>ImageKit.io</strong> for fast and secure
+                image delivery.
               </p>
-              <Link href="https://imagekit.io" target="_blank" className="text-primary hover:underline text-sm">
+              <Link
+                href="https://imagekit.io"
+                target="_blank"
+                className="text-primary hover:underline text-sm"
+              >
                 Visit ImageKit.io
               </Link>
             </div>
-            
+
             <div className="bg-card/50 border rounded-xl p-6">
               <h3 className="font-semibold mb-2">3D Models</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Human anatomy models sourced from <strong>NIH 3D Print Exchange</strong>.
+                Human anatomy models sourced from{" "}
+                <strong>NIH 3D Print Exchange</strong>.
               </p>
-              <Link href="https://3d.nih.gov/" target="_blank" className="text-primary hover:underline text-sm">
+              <Link
+                href="https://3d.nih.gov/"
+                target="_blank"
+                className="text-primary hover:underline text-sm"
+              >
                 Visit NIH 3D
               </Link>
             </div>
@@ -86,14 +101,16 @@ export default function CopyrightPage() {
             <div className="bg-card/50 border rounded-xl p-6">
               <h3 className="font-semibold mb-2">AI Analysis</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Powered by <strong>Google Gemini API</strong> for advanced multimodal understanding.
+                Powered by <strong>Google Gemini API</strong> for advanced
+                multimodal understanding.
               </p>
             </div>
 
             <div className="bg-card/50 border rounded-xl p-6">
               <h3 className="font-semibold mb-2">Framework</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Built with <strong>Next.js 15</strong>, <strong>Tailwind CSS</strong>, and <strong>Drizzle ORM</strong>.
+                Built with <strong>Next.js 16</strong>,{" "}
+                <strong>Tailwind CSS</strong>, and <strong>Drizzle ORM</strong>.
               </p>
             </div>
           </div>

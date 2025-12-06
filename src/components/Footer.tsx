@@ -12,35 +12,89 @@ export function Footer() {
               Smart nutrition analysis powered by artificial intelligence.
             </p>
           </div>
-          
+
           <div className="space-y-4">
             <h4 className="font-semibold">Product</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link href="/" className="hover:text-primary transition-colors">Home</Link></li>
-              <li><Link href="/dashboard" className="hover:text-primary transition-colors">Dashboard</Link></li>
+              <li>
+                <Link
+                  href="/"
+                  className="hover:text-emerald-400 transition-colors"
+                >
+                  Home
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/dashboard"
+                  className="hover:text-emerald-400 transition-colors"
+                >
+                  Dashboard
+                </Link>
+              </li>
             </ul>
           </div>
 
           <div className="space-y-4">
             <h4 className="font-semibold">Legal</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
-              <li><Link href="/terms" className="hover:text-primary transition-colors">Terms of Service</Link></li>
-              <li><Link href="/contact" className="hover:text-primary transition-colors">Contact</Link></li>
-              <li><Link href="/copyright" className="hover:text-primary transition-colors">Copyright</Link></li>
+              <li>
+                <Link
+                  href="/privacy"
+                  className="hover:text-emerald-400 transition-colors"
+                >
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/terms"
+                  className="hover:text-emerald-400 transition-colors"
+                >
+                  Terms of Service
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/contact"
+                  className="hover:text-emerald-400 transition-colors"
+                >
+                  Contact
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/copyright"
+                  className="hover:text-emerald-400 transition-colors"
+                >
+                  Copyright
+                </Link>
+              </li>
             </ul>
           </div>
 
           <div className="space-y-4">
             <h4 className="font-semibold">Connect</h4>
             <div className="flex gap-4">
-              <Link href="https://github.com/0xarchit/AI-Health" target="_blank" className="text-muted-foreground hover:text-primary transition-colors">
+              <Link
+                href="https://github.com/0xarchit/AI-Health"
+                target="_blank"
+                className="text-muted-foreground hover:text-emerald-400 transition-colors"
+              >
                 <Github className="w-5 h-5" />
               </Link>
-              <Link href="https://linkedin.com/in/0xarchit" target="_blank" className="text-muted-foreground hover:text-primary transition-colors">
+              <Link
+                href="https://linkedin.com/in/0xarchit"
+                target="_blank"
+                className="text-muted-foreground hover:text-emerald-400 transition-colors"
+              >
                 <Linkedin className="w-5 h-5" />
               </Link>
-              <Link href="https://0xarchit.is-a.dev" target="_blank" className="text-muted-foreground hover:text-primary transition-colors">
+              <Link
+                href="https://0xarchit.is-a.dev"
+                target="_blank"
+                className="text-muted-foreground hover:text-emerald-400 transition-colors"
+              >
                 <span className="sr-only">Portfolio</span>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -60,9 +114,12 @@ export function Footer() {
             </div>
           </div>
         </div>
-        
+
         <div className="border-t mt-12 pt-8 text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} AI Health. Open Source Project by 0xarchit.</p>
+          <p>
+            &copy; {new Date().getFullYear()} AI Health. Open Source Project by
+            0xarchit.
+          </p>
         </div>
       </div>
     </footer>

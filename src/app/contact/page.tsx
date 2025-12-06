@@ -4,9 +4,28 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Zap, Loader2, Send, AlertCircle, CheckCircle2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  ArrowLeft,
+  Zap,
+  Loader2,
+  Send,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -29,7 +48,6 @@ export default function ContactPage() {
     const type = formData.get("type") as string;
     const message = formData.get("message") as string;
 
-    
     if (!email || !email.endsWith("@gmail.com")) {
       setError("Only @gmail.com addresses are allowed.");
       setLoading(false);
@@ -78,7 +96,6 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {}
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl">
@@ -105,7 +122,8 @@ export default function ContactPage() {
             <CardHeader>
               <CardTitle className="text-2xl">Contact Us</CardTitle>
               <CardDescription>
-                Have a question, complaint, or want to delete your account? We're here to help.
+                Have a question, complaint, or want to delete your account?
+                We're here to help.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -125,7 +143,8 @@ export default function ContactPage() {
                   </div>
                   <div className="space-y-2">
                     <label htmlFor="surname" className="text-sm font-medium">
-                      Surname <span className="text-muted-foreground">(Optional)</span>
+                      Surname{" "}
+                      <span className="text-muted-foreground">(Optional)</span>
                     </label>
                     <Input
                       id="surname"
@@ -148,15 +167,20 @@ export default function ContactPage() {
                     required
                     className="bg-muted/30"
                   />
-                  <p className="text-xs text-muted-foreground">Only standard @gmail.com addresses allowed.</p>
+                  <p className="text-xs text-muted-foreground">
+                    Only standard @gmail.com addresses allowed.
+                  </p>
                 </div>
 
                 <div className="space-y-2">
                   <label htmlFor="telegram" className="text-sm font-medium">
-                    Telegram Username <span className="text-muted-foreground">(Optional)</span>
+                    Telegram Username{" "}
+                    <span className="text-muted-foreground">(Optional)</span>
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-muted-foreground">@</span>
+                    <span className="absolute left-3 top-2.5 text-muted-foreground">
+                      @
+                    </span>
                     <Input
                       id="telegram"
                       name="telegram"
@@ -175,9 +199,15 @@ export default function ContactPage() {
                       <SelectValue placeholder="Select a topic" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="account_deletion">Account Deletion Request</SelectItem>
-                      <SelectItem value="complaint">Complaint / Report Issue</SelectItem>
-                      <SelectItem value="feedback">Feedback & Suggestions</SelectItem>
+                      <SelectItem value="account_deletion">
+                        Account Deletion Request
+                      </SelectItem>
+                      <SelectItem value="complaint">
+                        Complaint / Report Issue
+                      </SelectItem>
+                      <SelectItem value="feedback">
+                        Feedback & Suggestions
+                      </SelectItem>
                       <SelectItem value="other">Other Inquiry</SelectItem>
                     </SelectContent>
                   </Select>
@@ -221,10 +251,15 @@ export default function ContactPage() {
                   )}
                 </AnimatePresence>
 
-                <Button type="submit" className="w-full" disabled={loading || success}>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={loading || success}
+                >
                   {loading ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
+                      Sending...
                     </>
                   ) : success ? (
                     "Sent"

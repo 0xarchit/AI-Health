@@ -16,8 +16,18 @@ interface MedicalRecord {
 import { useCachedFetch } from "@/hooks/use-fetch-cache";
 import { fetchWithAuth } from "@/lib/api-client";
 
-export function MedicalRecordList({ refreshTrigger }: { refreshTrigger: number }) {
-  const { data: fetchedData, loading, refresh } = useCachedFetch<{ records: MedicalRecord[] }>("/api/medical-records", { withAuth: true });
+export function MedicalRecordList({
+  refreshTrigger,
+}: {
+  refreshTrigger: number;
+}) {
+  const {
+    data: fetchedData,
+    loading,
+    refresh,
+  } = useCachedFetch<{ records: MedicalRecord[] }>("/api/medical-records", {
+    withAuth: true,
+  });
   const [records, setRecords] = useState<MedicalRecord[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editSummary, setEditSummary] = useState("");
@@ -36,7 +46,7 @@ export function MedicalRecordList({ refreshTrigger }: { refreshTrigger: number }
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this record?")) return;
-    
+
     try {
       await fetchWithAuth(`/api/medical-records?id=${id}`, {
         method: "DELETE",
@@ -61,12 +71,12 @@ export function MedicalRecordList({ refreshTrigger }: { refreshTrigger: number }
     try {
       await fetchWithAuth("/api/medical-records", {
         method: "PATCH",
-        headers: { 
-          "Content-Type": "application/json"
+        headers: {
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ id, summary: editSummary }),
       });
-      
+
       setEditingId(null);
       refresh();
     } catch (err) {
@@ -74,11 +84,16 @@ export function MedicalRecordList({ refreshTrigger }: { refreshTrigger: number }
     }
   };
 
-  if (loading) return <div className="text-center p-4"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>;
+  if (loading)
+    return (
+      <div className="text-center p-4">
+        <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+      </div>
+    );
 
   if (records.length === 0) {
     return (
-      <Card>
+      <Card className="bg-transparent border-none shadow-none">
         <CardContent className="p-6 text-center text-muted-foreground">
           No medical records uploaded yet.
         </CardContent>
@@ -89,7 +104,10 @@ export function MedicalRecordList({ refreshTrigger }: { refreshTrigger: number }
   return (
     <div className="space-y-4">
       {records.map((record) => (
-        <Card key={record.id}>
+        <Card
+          key={record.id}
+          className="bg-card/10 backdrop-blur-sm border-white/10"
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-base font-medium flex items-center gap-2">
               <FileText className="w-4 h-4 text-primary" />
@@ -98,7 +116,11 @@ export function MedicalRecordList({ refreshTrigger }: { refreshTrigger: number }
             <div className="flex gap-1">
               {editingId === record.id ? (
                 <>
-                  <Button variant="ghost" size="icon" onClick={() => handleUpdate(record.id)}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleUpdate(record.id)}
+                  >
                     <Check className="w-4 h-4 text-green-500" />
                   </Button>
                   <Button variant="ghost" size="icon" onClick={cancelEditing}>
@@ -107,10 +129,18 @@ export function MedicalRecordList({ refreshTrigger }: { refreshTrigger: number }
                 </>
               ) : (
                 <>
-                  <Button variant="ghost" size="icon" onClick={() => startEditing(record)}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => startEditing(record)}
+                  >
                     <Edit2 className="w-4 h-4 text-muted-foreground" />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => handleDelete(record.id)}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDelete(record.id)}
+                  >
                     <Trash2 className="w-4 h-4 text-destructive" />
                   </Button>
                 </>
@@ -119,9 +149,9 @@ export function MedicalRecordList({ refreshTrigger }: { refreshTrigger: number }
           </CardHeader>
           <CardContent>
             {editingId === record.id ? (
-              <Textarea 
-                value={editSummary} 
-                onChange={(e) => setEditSummary(e.target.value)} 
+              <Textarea
+                value={editSummary}
+                onChange={(e) => setEditSummary(e.target.value)}
                 className="min-h-[100px]"
               />
             ) : (
