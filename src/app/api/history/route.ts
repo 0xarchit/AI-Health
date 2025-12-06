@@ -4,7 +4,6 @@ import { verifySessionToken } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { scans, images } from "@/db/schema";
 import { desc, eq } from "drizzle-orm";
-import { unstable_cache, revalidateTag } from "next/cache";
 
 const getScans = async (userId: string) => {
   return await db
@@ -14,16 +13,6 @@ const getScans = async (userId: string) => {
     .orderBy(desc(scans.createdAt))
     .limit(10);
 };
-
-const getCachedScans = (userId: string) =>
-  unstable_cache(
-    async () => getScans(userId),
-    [`history-${userId}`],
-    {
-      tags: [`history-${userId}`],
-      revalidate: 300 
-    }
-  )();
 
 export async function GET(req: NextRequest) {
   try {
@@ -41,7 +30,7 @@ export async function GET(req: NextRequest) {
     }
 
     
-    const userScans = await getCachedScans(payload.userId);
+    const userScans = await getScans(payload.userId);
 
     return NextResponse.json(
       { scans: userScans },
@@ -109,8 +98,6 @@ export async function DELETE(req: NextRequest) {
     );
 
     await db.delete(scans).where(eq(scans.userId, payload.userId));
-
-    (revalidateTag as any)(`history-${payload.userId}`);
 
     return NextResponse.json({ success: true });
   } catch (error) {

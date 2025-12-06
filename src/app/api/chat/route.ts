@@ -5,7 +5,6 @@ import { users, healthContext, medicalRecords } from "@/db/schema";
 import { decrypt } from "@/lib/security";
 import { eq, desc } from "drizzle-orm";
 import { OAuth2Client } from "google-auth-library";
-import { unstable_cache } from "next/cache";
 
 export async function POST(req: NextRequest) {
   const session = await validateRequest();
@@ -36,37 +35,15 @@ export async function POST(req: NextRequest) {
 
   try {
     
-    const getCachedHealthContext = (userId: string) =>
-      unstable_cache(
-        async () => db.query.healthContext.findFirst({
-          where: eq(healthContext.userId, userId),
-        }),
-        [`health-context-${userId}`],
-        {
-          tags: [`health-context-${userId}`],
-          revalidate: 300
-        }
-      )();
+    const context = await db.query.healthContext.findFirst({
+      where: eq(healthContext.userId, session.userId),
+    });
 
-    const getCachedMedicalRecords = (userId: string) =>
-      unstable_cache(
-        async () => db.query.medicalRecords.findMany({
-          where: eq(medicalRecords.userId, userId),
-          orderBy: [desc(medicalRecords.createdAt)],
-          limit: 5,
-        }),
-        [`medical-records-${userId}-limit-5`], 
-        
-        
-        
-        {
-          tags: [`medical-records-${userId}`], 
-          revalidate: 300
-        }
-      )();
-
-    const context = await getCachedHealthContext(session.userId);
-    const records = await getCachedMedicalRecords(session.userId);
+    const records = await db.query.medicalRecords.findMany({
+      where: eq(medicalRecords.userId, session.userId),
+      orderBy: [desc(medicalRecords.createdAt)],
+      limit: 5,
+    });
 
     const contextString = `
       User Health Context:
@@ -129,7 +106,14 @@ export async function POST(req: NextRequest) {
     const data = await response.json();
     const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
-    return NextResponse.json({ response: textResponse });
+    return NextResponse.json(
+      { response: textResponse },
+      {
+        headers: {
+          "Cache-Control": "no-store, max-age=0, must-revalidate",
+        },
+      }
+    );
 
   } catch (err: any) {
     console.error("Chat Error:", err);

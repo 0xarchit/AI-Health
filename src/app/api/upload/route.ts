@@ -32,10 +32,13 @@ export async function POST(req: NextRequest) {
 
   if (existingScan && existingScan.imageUrl) {
     console.log("Duplicate upload found via hash, returning existing URL.");
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true, 
       url: existingScan.imageUrl,
-      cached: true
+    }, {
+      headers: {
+        "Cache-Control": "no-store, max-age=0, must-revalidate",
+      }
     });
   }
 

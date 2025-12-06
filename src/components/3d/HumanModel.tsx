@@ -6,6 +6,7 @@ import { OrbitControls, Html, useGLTF, Stage } from "@react-three/drei";
 import * as THREE from "three";
 import { Suspense } from "react";
 import { useTheme } from "next-themes";
+import { Button } from "../ui/button";
 
 interface AffectedOrgan {
   organ: string;
@@ -68,24 +69,25 @@ const ORGAN_MAPPING: Record<string, string[]> = {
     "vh_f_renal_column",
     "vh_f_ureter",
   ],
-  intestine: [
-    "vh_m_intestine",
+  large_intestine: [
     "vh_m_colon",
     "vh_m_rectal",
     "vh_m_caecum",
-    "vh_m_ileum",
-    "vh_m_jejunum",
-    "vh_m_duodenum",
     "vh_m_sigmoid",
-
-    "vh_f_intestine",
+    "vh_m_intestine", 
     "vh_f_colon",
     "vh_f_rectal",
     "vh_f_caecum",
+    "vh_f_sigmoid",
+    "vh_f_intestine",
+  ],
+  small_intestine: [
+    "vh_m_ileum",
+    "vh_m_jejunum",
+    "vh_m_duodenum",
     "vh_f_ileum",
     "vh_f_jejunum",
     "vh_f_duodenum",
-    "vh_f_sigmoid",
   ],
   brain: ["brain", "cerebral", "cerebellum", "lobe", "skull", "head"],
   lungs: [
@@ -153,7 +155,6 @@ const ORGAN_MAPPING: Record<string, string[]> = {
     "vh_m_ischium",
     "vh_m_pubis",
     "vh_m_hyoid",
-
     "vh_f_bone",
     "vh_f_femur",
     "vh_f_tibia",
@@ -187,10 +188,12 @@ const Model = ({
   affectedOrgans,
   modelUrl,
   gender,
+  selectedOrgan,
 }: {
   affectedOrgans: AffectedOrgan[];
   modelUrl: string;
   gender: "male" | "female";
+  selectedOrgan: string | null;
 }) => {
   const { scene, nodes } = useGLTF(modelUrl);
   const [tooltip, setTooltip] = useState<{
@@ -221,39 +224,31 @@ const Model = ({
       opacity: 0.8,
       transparent: true,
       roughness: 0.5,
+      side: THREE.DoubleSide,
     });
 
-    const highlightHigh = new THREE.MeshStandardMaterial({
-      color: "#ef4444",
-      emissive: "#ef4444",
-      emissiveIntensity: 2,
+    const createHighlight = (color: string, transparent: boolean = false) => new THREE.MeshStandardMaterial({
+      color,
+      emissive: color,
+      emissiveIntensity: transparent ? 0.5 : 1.5, 
       roughness: 0.2,
       metalness: 0.5,
-      transparent: false,
-      opacity: 1,
+      transparent: transparent || false,
+      opacity: transparent ? 0.2 : 1, 
+      side: THREE.DoubleSide,
     });
 
-    const highlightMod = new THREE.MeshStandardMaterial({
-      color: "#eab308",
-      emissive: "#eab308",
-      emissiveIntensity: 1.5,
-      roughness: 0.2,
-      metalness: 0.5,
-      transparent: false,
-      opacity: 1,
-    });
-
-    const highlightLow = new THREE.MeshStandardMaterial({
-      color: "#22c55e",
-      emissive: "#22c55e",
-      emissiveIntensity: 1.2,
-      roughness: 0.2,
-      metalness: 0.5,
-      transparent: false,
-      opacity: 1,
-    });
-
-    return { glass, bone, highlightHigh, highlightMod, highlightLow };
+    return { 
+      glass, 
+      bone, 
+      highlightHigh: createHighlight("#ef4444"), 
+      highlightMod: createHighlight("#eab308"), 
+      highlightLow: createHighlight("#22c55e"),
+      
+      highlightHighTrans: createHighlight("#ef4444", true),
+      highlightModTrans: createHighlight("#eab308", true),
+      highlightLowTrans: createHighlight("#22c55e", true),
+   };
   }, [theme]);
 
   useMemo(() => {
@@ -272,7 +267,9 @@ const Model = ({
           if (organKey === "lungs") organKey = "lungs";
           if (organKey === "arteries" || organKey === "veins")
             organKey = "blood";
-          if (organKey === "intestines") organKey = "intestine";
+          
+          
+          organKey = organKey.replace(" ", "_");
 
           if (nodeName.includes(organKey)) return true;
 
@@ -283,13 +280,35 @@ const Model = ({
           return false;
         });
 
+        
+        let shouldHighlight = false;
         if (affected) {
+            if (selectedOrgan) {
+                
+                 if (affected.organ === selectedOrgan) {
+                     shouldHighlight = true;
+                 }
+            } else {
+                
+                shouldHighlight = true;
+            }
+        }
+
+        if (affected && shouldHighlight) {
+          const isSkin = affected.organ.toLowerCase() === "skin";
+          const hasOtherOrgans = affectedOrgans.length > 1; 
+
+          
+          
+          
+          const useTransparent = !selectedOrgan && isSkin && hasOtherOrgans;
+
           if (affected.risk.toLowerCase() === "high") {
-            child.material = materials.highlightHigh;
+            child.material = useTransparent ? materials.highlightHighTrans : materials.highlightHigh;
           } else if (affected.risk.toLowerCase() === "moderate") {
-            child.material = materials.highlightMod;
+            child.material = useTransparent ? materials.highlightModTrans : materials.highlightMod;
           } else {
-            child.material = materials.highlightLow;
+            child.material = useTransparent ? materials.highlightLowTrans : materials.highlightLow;
           }
 
           child.userData.isAffected = true;
@@ -297,12 +316,12 @@ const Model = ({
           child.userData.risk = affected.risk;
           child.userData.description = affected.description;
 
-          console.log(
-            `Highlighting ${nodeName} for ${affected.organ} (${affected.risk})`
-          );
-
           child.raycast = child.userData.originalRaycast;
         } else {
+          
+          
+          
+
           if (
             nodeName.includes("bone") ||
             nodeName.includes("vertebra") ||
@@ -317,20 +336,22 @@ const Model = ({
           } else {
             child.material = materials.glass;
           }
+          
           child.userData.isAffected = false;
-
+          
           child.raycast = () => null;
         }
       }
     });
-  }, [scene, affectedOrgans, materials]);
+  }, [scene, affectedOrgans, materials, selectedOrgan]);
 
   useFrame((state) => {
     const t = state.clock.getElapsedTime();
     scene.traverse((child) => {
       if (child instanceof THREE.Mesh && child.userData.isAffected) {
-        if (child.material instanceof THREE.MeshStandardMaterial) {
-          child.material.emissiveIntensity = 1.5 + Math.sin(t * 3) * 0.5;
+        if (child.material instanceof THREE.MeshStandardMaterial && child.material.opacity > 0.5) {
+            
+            child.material.emissiveIntensity = 1.5 + Math.sin(t * 3) * 0.5;
         }
       }
     });
@@ -411,116 +432,222 @@ export default function HumanModel({
 }: HumanModelProps) {
   const { resolvedTheme } = useTheme();
   const theme = resolvedTheme;
+  const [selectedOrgan, setSelectedOrgan] = useState<string | null>(null);
+
+  
+  useEffect(() => {
+    setSelectedOrgan(null);
+  }, [affectedOrgans]);
 
   return (
-    <div className="w-full h-[600px] rounded-xl overflow-hidden border border-border bg-transparent shadow-2xl relative transition-colors duration-500">
-      <div className="absolute top-4 left-4 z-10">
-        <h3 className="font-bold text-lg flex items-center gap-2 text-foreground">
-          <span
-            className={`w-2 h-2 rounded-full ${
-              !hasAnalyzed
-                ? "bg-muted-foreground"
-                : affectedOrgans.length === 0
-                ? "bg-green-500"
-                : "bg-red-500"
-            } animate-pulse`}
-          ></span>
-          Body Impact Analysis ({gender === "male" ? "Male" : "Female"})
-        </h3>
-        <p className="text-muted-foreground text-xs">
-          Interactive 3D Visualization
-        </p>
-      </div>
+    <div className="w-full flex flex-col gap-4">
+      <div className="w-full h-[600px] rounded-xl overflow-hidden border border-border bg-transparent shadow-2xl relative transition-colors duration-500">
+        <div className="absolute top-4 left-4 z-10">
+          <h3 className="font-bold text-lg flex items-center gap-2 text-foreground">
+            <span
+              className={`w-2 h-2 rounded-full ${
+                !hasAnalyzed
+                  ? "bg-muted-foreground"
+                  : affectedOrgans.length === 0
+                  ? "bg-green-500"
+                  : "bg-red-500"
+              } animate-pulse`}
+            ></span>
+            Body Impact Analysis ({gender === "male" ? "Male" : "Female"})
+          </h3>
+          <p className="text-muted-foreground text-xs">
+            Interactive 3D Visualization
+          </p>
+        </div>
 
-      {!hasAnalyzed && serverStatus === "available" && (
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none w-full px-4">
-          <div className="backdrop-blur-sm border border-border px-6 py-4 rounded-xl text-center shadow-lg bg-background/80">
-            <h3 className="font-bold text-xl mb-1 flex items-center justify-center gap-2 text-foreground">
-              <span>👆</span> Select Food to Begin
-            </h3>
-            <p className="text-muted-foreground text-sm">
-              Upload or select a food item to see its impact.
-            </p>
+        {!hasAnalyzed && serverStatus === "available" && (
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none w-full px-4">
+            <div className="backdrop-blur-sm border border-border px-6 py-4 rounded-xl text-center shadow-lg bg-background/80">
+              <h3 className="font-bold text-xl mb-1 flex items-center justify-center gap-2 text-foreground">
+                <span>👆</span> Select Food to Begin
+              </h3>
+              <p className="text-muted-foreground text-sm">
+                Upload or select a food item to see its impact.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {serverStatus === "unavailable" && (
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none w-full px-4">
+            <div className="bg-red-500/10 backdrop-blur-sm border border-red-500/30 px-6 py-4 rounded-xl text-center shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+              <h3 className="text-red-400 font-bold text-xl mb-1 flex items-center justify-center gap-2">
+                <span>⚠️</span> Server Unavailable
+              </h3>
+              <p className="text-red-200/70 text-sm">
+                The 3D model server is currently down. Please try again later.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {hasAnalyzed && affectedOrgans.length === 0 && (
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none w-full px-4">
+            <div className="bg-green-500/10 backdrop-blur-sm border border-green-500/30 px-6 py-4 rounded-xl text-center shadow-[0_0_30px_rgba(34,197,94,0.2)]">
+              <h3 className="text-green-400 font-bold text-xl mb-1 flex items-center justify-center gap-2">
+                <span>✅</span> No Negative Impact
+              </h3>
+              <p className="text-green-200/70 text-sm">
+                This food is healthy for your body!
+              </p>
+            </div>
+          </div>
+        )}
+
+        
+        {hasAnalyzed && affectedOrgans.length > 0 && (
+          <div className="hidden md:flex absolute top-16 right-4 z-30 flex-col gap-2 bg-background/50 backdrop-blur-md p-2 rounded-lg border border-border/50 max-h-[400px] overflow-y-auto">
+            <h4 className="text-[10px] uppercase font-bold text-muted-foreground mb-1 px-1">
+              Affected Organs
+            </h4>
+
+            <button
+              onClick={() => setSelectedOrgan(null)}
+              className={`text-xs px-3 py-1.5 rounded-md transition-all text-left flex items-center justify-between group ${
+                selectedOrgan === null
+                  ? "bg-primary text-primary-foreground shadow-md"
+                  : "hover:bg-accent/50 text-foreground"
+              }`}
+            >
+              <span>Unknown/All</span>
+              <span className="text-[10px] opacity-70 bg-black/20 px-1.5 rounded-full">
+                {affectedOrgans.length}
+              </span>
+            </button>
+
+            <div className="h-px bg-border/50 my-1"></div>
+
+            {affectedOrgans.map((organ, idx) => (
+              <button
+                key={`${organ.organ}-${idx}`}
+                onClick={() => setSelectedOrgan(organ.organ)}
+                className={`text-xs px-3 py-1.5 rounded-md transition-all text-left flex items-center justify-between group ${
+                  selectedOrgan === organ.organ
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "hover:bg-accent/50 text-foreground"
+                }`}
+              >
+                <span className="capitalize">{organ.organ}</span>
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    organ.risk.toLowerCase() === "high"
+                      ? "bg-red-500"
+                      : organ.risk.toLowerCase() === "moderate"
+                      ? "bg-yellow-500"
+                      : "bg-green-500"
+                  }`}
+                ></span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        
+        <div className="absolute bottom-4 left-4 z-10 flex gap-2 flex-wrap max-w-[80%]">
+          <div className="flex items-center gap-1 bg-black/50 px-2 py-1 rounded text-[10px] text-white">
+            <span className="w-2 h-2 rounded-full bg-red-500"></span> High
+          </div>
+          <div className="flex items-center gap-1 bg-black/50 px-2 py-1 rounded text-[10px] text-white">
+            <span className="w-2 h-2 rounded-full bg-yellow-500"></span> Mod
+          </div>
+          <div className="flex items-center gap-1 bg-black/50 px-2 py-1 rounded text-[10px] text-white">
+            <span className="w-2 h-2 rounded-full bg-green-500"></span> Low
           </div>
         </div>
-      )}
 
-      {serverStatus === "unavailable" && (
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none w-full px-4">
-          <div className="bg-red-500/10 backdrop-blur-sm border border-red-500/30 px-6 py-4 rounded-xl text-center shadow-[0_0_30px_rgba(239,68,68,0.2)]">
-            <h3 className="text-red-400 font-bold text-xl mb-1 flex items-center justify-center gap-2">
-              <span>⚠️</span> Server Unavailable
-            </h3>
-            <p className="text-red-200/70 text-sm">
-              The 3D model server is currently down. Please try again later.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {hasAnalyzed && affectedOrgans.length === 0 && (
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none w-full px-4">
-          <div className="bg-green-500/10 backdrop-blur-sm border border-green-500/30 px-6 py-4 rounded-xl text-center shadow-[0_0_30px_rgba(34,197,94,0.2)]">
-            <h3 className="text-green-400 font-bold text-xl mb-1 flex items-center justify-center gap-2">
-              <span>✅</span> No Negative Impact
-            </h3>
-            <p className="text-green-200/70 text-sm">
-              This food is healthy for your body!
-            </p>
-          </div>
-        </div>
-      )}
-
-      <div className="absolute bottom-4 right-4 z-10 flex gap-2 flex-wrap justify-end max-w-[80%]">
-        <div className="flex items-center gap-1 bg-black/50 px-2 py-1 rounded text-[10px] text-white">
-          <span className="w-2 h-2 rounded-full bg-red-500"></span> High
-        </div>
-        <div className="flex items-center gap-1 bg-black/50 px-2 py-1 rounded text-[10px] text-white">
-          <span className="w-2 h-2 rounded-full bg-yellow-500"></span> Mod
-        </div>
-        <div className="flex items-center gap-1 bg-black/50 px-2 py-1 rounded text-[10px] text-white">
-          <span className="w-2 h-2 rounded-full bg-green-500"></span> Low
-        </div>
-      </div>
-
-      <Canvas
-        camera={{ position: [0, 0, 2.5], fov: 50 }}
-        dpr={[1, 1.5]}
-        gl={{ preserveDrawingBuffer: true, antialias: true }}
-      >
-        <Suspense
-          fallback={
-            <Html center>
-              <div className="text-foreground text-sm">Loading 3D Model...</div>
-            </Html>
-          }
+        <Canvas
+          camera={{ position: [0, 0, 2.5], fov: 50 }}
+          dpr={[1, 1.5]}
+          gl={{ preserveDrawingBuffer: true, antialias: true }}
         >
-          <Model
-            affectedOrgans={affectedOrgans}
-            modelUrl={modelUrl}
-            gender={gender}
-          />
+          <Suspense
+            fallback={
+              <Html center>
+                <div className="text-foreground text-sm">Loading 3D Model...</div>
+              </Html>
+            }
+          >
+            <Model
+              affectedOrgans={affectedOrgans}
+              modelUrl={modelUrl}
+              gender={gender}
+              selectedOrgan={selectedOrgan}
+            />
 
-          <OrbitControls
-            makeDefault
-            enableZoom={true}
-            enablePan={true}
-            enableDamping={true}
-            dampingFactor={0.05}
-            minPolarAngle={0}
-            maxPolarAngle={Math.PI}
-            autoRotate={affectedOrgans.length === 0}
-            autoRotateSpeed={0.5}
-            rotateSpeed={0.5}
-            zoomSpeed={0.5}
-            panSpeed={0.5}
-            touches={{
-              ONE: THREE.TOUCH.ROTATE,
-              TWO: THREE.TOUCH.DOLLY_PAN,
-            }}
-          />
-        </Suspense>
-      </Canvas>
+            <OrbitControls
+              makeDefault
+              enableZoom={true}
+              enablePan={true}
+              enableDamping={true}
+              dampingFactor={0.05}
+              minPolarAngle={0}
+              maxPolarAngle={Math.PI}
+              autoRotate={affectedOrgans.length === 0}
+              autoRotateSpeed={0.5}
+              rotateSpeed={0.5}
+              zoomSpeed={0.5}
+              panSpeed={0.5}
+              touches={{
+                ONE: THREE.TOUCH.ROTATE,
+                TWO: THREE.TOUCH.DOLLY_PAN,
+              }}
+            />
+          </Suspense>
+        </Canvas>
+      </div>
+
+      
+      {hasAnalyzed && affectedOrgans.length > 0 && (
+        <div className="md:hidden grid grid-cols-2 gap-2 bg-background/50 p-2 rounded-lg border border-border/50">
+          <div className="col-span-2">
+            <h4 className="text-[10px] uppercase font-bold text-muted-foreground mb-1 px-1">
+              Affected Organs
+            </h4>
+          </div>
+
+          <button
+            onClick={() => setSelectedOrgan(null)}
+            className={`text-xs px-3 py-2 rounded-md transition-all text-left flex items-center justify-between group ${
+              selectedOrgan === null
+                ? "bg-primary text-primary-foreground shadow-md"
+                : "bg-background border border-border hover:bg-accent/50 text-foreground"
+            }`}
+          >
+            <span>Unknown/All</span>
+            <span className="text-[10px] opacity-70 bg-black/20 px-1.5 rounded-full">
+              {affectedOrgans.length}
+            </span>
+          </button>
+
+          {affectedOrgans.map((organ, idx) => (
+            <button
+              key={`${organ.organ}-${idx}`}
+              onClick={() => setSelectedOrgan(organ.organ)}
+              className={`text-xs px-3 py-2 rounded-md transition-all text-left flex items-center justify-between group ${
+                selectedOrgan === organ.organ
+                  ? "bg-primary text-primary-foreground shadow-md"
+                  : "bg-background border border-border hover:bg-accent/50 text-foreground"
+              }`}
+            >
+              <span className="capitalize truncate flex-1 mr-2">{organ.organ}</span>
+              <span
+                className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                  organ.risk.toLowerCase() === "high"
+                    ? "bg-red-500"
+                    : organ.risk.toLowerCase() === "moderate"
+                    ? "bg-yellow-500"
+                    : "bg-green-500"
+                }`}
+              ></span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

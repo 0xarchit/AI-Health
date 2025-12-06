@@ -318,7 +318,7 @@ export default function LandingPageAurora() {
             <div className="w-full overflow-hidden">
               <LogoLoop
                 logos={techStackLogos}
-                speed={5}
+                speed={50}
                 direction="left"
                 pauseOnHover={true}
                 gap={60}

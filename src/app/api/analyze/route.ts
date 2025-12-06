@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
 import { validateRequest } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { users, scans, healthContext, medicalRecords } from "@/db/schema";
@@ -122,41 +121,40 @@ export async function POST(req: NextRequest) {
           {
             parts: [
               {
-                text: `Analyze this food image for a ${gender} and provide a detailed nutritional breakdown.
-                
+                text: `Analyze this food image for a ${gender} and generate a comprehensive nutritional evaluation.
                 ${contextString}
-
-                Return a strict JSON object with the following structure:
+                Return only a strict JSON object with the exact structure below and no additional text:
                 {
-                  "food_name": "string",
-                  "description": "string (brief description)",
-                  "ingredients": ["string"],
-                  "nutrition": {
-                    "calories": number,
-                    "carbs": number, 
-                    "fat": number, 
-                    "protein": number, 
-                    "sugar": number, 
-                    "sodium": number, 
-                    "fiber": number 
-                  },
-                  "health_assessment": "string (Healthy, Moderate, Unhealthy - and why)",
-                  "warnings": ["string (Specific warnings based on user's allergies/conditions if applicable)"],
-                  "affected_organs": [
-                    {
-                      "organ": "string (heart, liver, stomach, brain, pancreas, kidneys, intestines, arteries, skin)",
-                      "risk": "string (High, Moderate, Low)",
-                      "description": "string (short explanation of impact)"
-                    }
-                  ],
-                  "confidence_score": number (0-1)
+                "food_name": "string",
+                "description": "string (brief description)",
+                "ingredients": ["string"],
+                "nutrition": {
+                "calories": number,
+                "carbs": number,
+                "fat": number,
+                "protein": number,
+                "sugar": number,
+                "sodium": number,
+                "fiber": number
+                },
+                "health_assessment": "string (Healthy, Moderate, Unhealthy — with a clear explanation)",
+                "warnings": ["string (specific warnings based on user's allergies or conditions, if any)"],
+                "affected_organs": [
+                {
+                "organ": "string (heart, liver, stomach, brain, pancreas, kidneys, lungs, large_intestine, small_intestine, arteries, skin, esophagus, gallbladder, bladder, spleen, thyroid, bones, muscles, eyes)",
+                "risk": "string (High, Moderate, Low)",
+                "description": "string (short explanation of the impact)"
                 }
-                IMPORTANT GUIDELINES:
-                1. If the food is generally healthy (e.g., fresh vegetables, balanced meals, fruits, salads), 'affected_organs' MUST be an empty array [].
-                2. ONLY list organs if there is a specific, notable NEGATIVE impact (e.g., high sugar affecting pancreas, high sodium affecting heart/kidneys, fried food affecting arteries).
-                3. Do NOT list 'Low' risk for normal digestion or minor effects. 'Low' risk is for slight concerns (e.g. slightly high salt), not for healthy food.
-                4. CHECK FOR ALLERGIES/CONDITIONS: If the food contains ingredients the user is allergic to or bad for their conditions, highlight this in 'warnings' and 'health_assessment'.
-                5. Do not include markdown formatting. Return ONLY the JSON.`
+                ],
+                "confidence_score": number (0-1)
+                }
+                STRICT GUIDELINES:
+                1. If the food appears healthy (e.g., fruits, salads, vegetables, balanced meals), 'affected_organs' must be an empty array [].
+                2. Only include organs when there is a specific, meaningful negative impact (behave and think like a doctor and check what it can effect).
+                3. Do not assign “Low” risk for normal digestion or general nutrient processing—only for slight but notable concerns.
+                4. Check the provided allergies/conditions in the context and reflect them in both "warnings" and "health_assessment".
+                5. Output must be pure JSON with no markdown, no commentary, and no additional formatting.
+                6. choose only from given organs as only they are only available in the model.`
               },
               {
                 inline_data: {
@@ -240,7 +238,8 @@ export async function POST(req: NextRequest) {
       imageUrl: imageUrl || null,
     });
 
-    (revalidateTag as any)(`history-${session.userId}`);
+    
+
 
     return NextResponse.json({ success: true, nutrition: nutritionData });
 

@@ -3,7 +3,6 @@ import { validateRequest } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { medicalRecords } from "@/db/schema";
 import { eq, desc, and } from "drizzle-orm";
-import { unstable_cache, revalidateTag } from "next/cache";
 
 const getMedicalRecords = async (userId: string) => {
   return await db.query.medicalRecords.findMany({
@@ -12,16 +11,6 @@ const getMedicalRecords = async (userId: string) => {
   });
 };
 
-const getCachedMedicalRecords = (userId: string) =>
-  unstable_cache(
-    async () => getMedicalRecords(userId),
-    [`medical-records-${userId}`],
-    {
-      tags: [`medical-records-${userId}`],
-      revalidate: 300 
-    }
-  )();
-
 export async function GET(req: NextRequest) {
   const session = await validateRequest();
   if (!session) {
@@ -29,13 +18,13 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const records = await getCachedMedicalRecords(session.userId);
+    const records = await getMedicalRecords(session.userId);
 
     return NextResponse.json(
       { records },
       {
         headers: {
-          "Cache-Control": "public, max-age=900, stale-while-revalidate=60",
+          "Cache-Control": "no-store, max-age=0, must-revalidate",
         },
       }
     );
@@ -60,7 +49,6 @@ export async function DELETE(req: NextRequest) {
 
   try {
     await db.delete(medicalRecords).where(and(eq(medicalRecords.id, id), eq(medicalRecords.userId, session.userId)));
-    (revalidateTag as any)(`medical-records-${session.userId}`);
     return NextResponse.json({ success: true });
   } catch (err: any) {
     console.error("Delete Medical Record Error:", err);
@@ -85,8 +73,6 @@ export async function PATCH(req: NextRequest) {
     await db.update(medicalRecords)
       .set({ summary })
       .where(and(eq(medicalRecords.id, id), eq(medicalRecords.userId, session.userId)));
-
-    (revalidateTag as any)(`medical-records-${session.userId}`);
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

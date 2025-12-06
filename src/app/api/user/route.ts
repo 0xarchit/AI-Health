@@ -4,7 +4,6 @@ import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { verifySessionToken } from "@/lib/auth";
 import { cookies } from "next/headers";
-import { unstable_cache } from "next/cache";
 
 const getUser = async (userId: string) => {
   return await db.query.users.findFirst({
@@ -20,16 +19,6 @@ const getUser = async (userId: string) => {
   });
 };
 
-const getCachedUser = (userId: string) =>
-  unstable_cache(
-    async () => getUser(userId),
-    [`user-${userId}`],
-    {
-      tags: [`user-${userId}`],
-      revalidate: 3600 
-    }
-  )();
-
 export async function GET(req: NextRequest) {
   try {
     const cookieStore = await cookies();
@@ -44,7 +33,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
-    const user = await getCachedUser(payload.userId);
+    const user = await getUser(payload.userId);
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -54,7 +43,7 @@ export async function GET(req: NextRequest) {
       { user },
       {
         headers: {
-          "Cache-Control": "public, max-age=60, stale-while-revalidate=30",
+          "Cache-Control": "no-store, max-age=0, must-revalidate",
         },
       }
     );
