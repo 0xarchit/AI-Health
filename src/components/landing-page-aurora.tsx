@@ -185,7 +185,7 @@ export default function LandingPageAurora() {
         <div className="max-w-5xl mx-auto px-6 pt-32 pb-24 flex flex-col items-center text-center">
           <div className="mb-8">
             <span className="relative px-4 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-semibold tracking-widest uppercase shadow-sm backdrop-blur-md">
-              Open Source AI Nutrition
+              Open Source AI Nutrition WebApp
             </span>
           </div>
 

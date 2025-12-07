@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import {
   LogOut,
   User,
@@ -24,10 +23,12 @@ import {
 import { useCachedFetch, clearApiCache } from "@/hooks/use-fetch-cache";
 import { AppLogo } from "@/components/ui/app-logo";
 import { useAuthStatus } from "@/hooks/use-auth-status";
+import { useInitialLoad } from "@/hooks/use-initial-load";
+import { InitialLoadingScreen } from "@/components/ui/initial-loading-screen";
 import Link from "next/link";
 
 export default function ProfilePage() {
-  const { isAuthenticated } = useAuthStatus(true);
+  const { isAuthenticated, loading: authLoading } = useAuthStatus(true);
   const {
     data: userData,
     loading: userLoading,
@@ -43,7 +44,10 @@ export default function ProfilePage() {
     }
   }, [userData]);
 
-  const loading = userLoading && !user;
+  const { isLoading: initialLoading, message: loadingMessage } = useInitialLoad([
+      { key: 'auth', isLoading: authLoading, message: 'VERIFYING CREDENTIALS' },
+      { key: 'user', isLoading: userLoading && !user, message: 'FETCHING USER PROFILE' },
+  ]);
 
   const handleSignOut = async () => {
     try {
@@ -55,17 +59,8 @@ export default function ProfilePage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-transparent">
-        <div className="flex flex-col items-center gap-4 relative z-10">
-          <div className="w-12 h-12 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-          <p className="text-primary font-mono text-sm animate-pulse">
-            AUTHENTICATING...
-          </p>
-        </div>
-      </div>
-    );
+  if (initialLoading) {
+    return <InitialLoadingScreen message={loadingMessage} />;
   }
 
   if (!user) return null;

@@ -33,6 +33,8 @@ import { useAuthStatus } from "@/hooks/use-auth-status";
 import { fetchWithAuth } from "@/lib/api-client";
 import { AppLogo } from "@/components/ui/app-logo";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useInitialLoad } from "@/hooks/use-initial-load";
+import { InitialLoadingScreen } from "@/components/ui/initial-loading-screen";
 import Link from "next/link";
 
 interface Scan {
@@ -72,15 +74,15 @@ export default function Dashboard() {
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const { isAuthenticated } = useAuthStatus(true);
+  const { isAuthenticated, loading: authLoading } = useAuthStatus(true);
   const router = useRouter();
 
-  const { data: userData } = useCachedFetch<{ user: any }>(
+  const { data: userData, loading: userLoading } = useCachedFetch<{ user: any }>(
     isAuthenticated ? "/api/user" : ""
   );
   const user = userData?.user;
 
-  const { data: historyData, refresh: refreshHistory } = useCachedFetch<{
+  const { data: historyData, loading: historyLoading, refresh: refreshHistory } = useCachedFetch<{
     scans: Scan[];
   }>(user ? "/api/history" : "");
   const [history, setHistory] = useState<Scan[]>([]);
@@ -90,6 +92,12 @@ export default function Dashboard() {
       setHistory(historyData.scans);
     }
   }, [historyData]);
+
+  const { isLoading: initialLoading, message: loadingMessage } = useInitialLoad([
+      { key: 'auth', isLoading: authLoading, message: 'VERIFYING CREDENTIALS' },
+      { key: 'user', isLoading: userLoading && !userData, message: 'FETCHING USER PROFILE' },
+      { key: 'history', isLoading: historyLoading && !historyData, message: 'RETRIEVING SCAN HISTORY' }
+  ]);
 
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -156,6 +164,10 @@ export default function Dashboard() {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/");
   };
+
+  if (initialLoading) {
+      return <InitialLoadingScreen message={loadingMessage} />;
+  }
 
   if (downloading) {
     return <ModelDownloading progress={progress} />;
