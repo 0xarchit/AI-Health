@@ -121,9 +121,9 @@ Developed with ❤️ by [0xArchit](https://0xarchit.is-a.dev).
 
 ## 🤝 Community
 
-- **[Code of Conduct](CODE_OF_CONDUCT.md)**
-- **[Contributing Guidelines](CONTRIBUTING.md)**
-- **[Security Policy](SECURITY.md)**
+- **[Code of Conduct](.github/CODE_OF_CONDUCT.md)**
+- **[Contributing Guidelines](.github/CONTRIBUTING.md)**
+- **[Security Policy](.github/SECURITY.md)**
 
 ### Contact
 - **Email**: mail@0xarchit.is-a.dev

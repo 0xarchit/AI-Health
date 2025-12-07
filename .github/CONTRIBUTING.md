@@ -6,7 +6,7 @@ The following is a set of guidelines for contributing to AI Health. These are ma
 
 ## Code of Conduct
 
-This project and everyone participating in it is governed by the [AI Health Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to mail@0xarchit.is-a.dev.
+This project and everyone participating in it is governed by the [AI Health Code of Conduct](.github/CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to mail@0xarchit.is-a.dev.
 
 ## How Can I Contribute?
 
