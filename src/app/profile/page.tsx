@@ -12,8 +12,8 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { MedicalRecordUploader } from "@/components/profile/MedicalRecordUploader";
-import { MedicalRecordList } from "@/components/profile/MedicalRecordList";
-import { HealthContextEditor } from "@/components/profile/HealthContextEditor";
+import { MedicalRecordList, MedicalRecord } from "@/components/profile/MedicalRecordList";
+import { HealthContextEditor, HealthContext } from "@/components/profile/HealthContextEditor";
 import {
   SurfacePanel,
   GlassPanel,
@@ -25,15 +25,30 @@ import { AppLogo } from "@/components/ui/app-logo";
 import { useAuthStatus } from "@/hooks/use-auth-status";
 import { useInitialLoad } from "@/hooks/use-initial-load";
 import { InitialLoadingScreen } from "@/components/ui/initial-loading-screen";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import Link from "next/link";
 
 export default function ProfilePage() {
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const { isAuthenticated, loading: authLoading } = useAuthStatus(true);
   const {
     data: userData,
     loading: userLoading,
     error,
   } = useCachedFetch<{ user: any }>(isAuthenticated ? "/api/user" : "");
+  
+  const {
+    data: healthData,
+    loading: healthLoading,
+    refresh: refreshHealth,
+  } = useCachedFetch<{ context: HealthContext }>(isAuthenticated ? "/api/health-context" : "");
+
+  const {
+    data: recordData,
+    loading: recordLoading,
+    refresh: refreshRecords,
+  } = useCachedFetch<{ records: MedicalRecord[] }>(isAuthenticated ? "/api/medical-records" : "");
+
   const [user, setUser] = useState<any>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const router = useRouter();
@@ -44,9 +59,15 @@ export default function ProfilePage() {
     }
   }, [userData]);
 
+  useEffect(() => {
+    if (refreshTrigger > 0) refreshRecords();
+  }, [refreshTrigger, refreshRecords]);
+
   const { isLoading: initialLoading, message: loadingMessage } = useInitialLoad([
       { key: 'auth', isLoading: authLoading, message: 'VERIFYING CREDENTIALS' },
       { key: 'user', isLoading: userLoading && !user, message: 'FETCHING USER PROFILE' },
+      { key: 'health', isLoading: healthLoading && !healthData, message: 'LOADING HEALTH CONTEXT' },
+      { key: 'records', isLoading: recordLoading && !recordData, message: 'RETRIEVING MEDICAL RECORDS' },
   ]);
 
   const handleSignOut = async () => {
@@ -135,7 +156,7 @@ export default function ProfilePage() {
               <GlowingButton
                 variant="outline"
                 size="sm"
-                onClick={handleSignOut}
+                onClick={() => setIsLogoutDialogOpen(true)}
                 className="border-destructive/30 text-destructive hover:bg-destructive/10"
               >
                 <LogOut className="w-4 h-4 mr-2" />
@@ -161,7 +182,10 @@ export default function ProfilePage() {
               </div>
             </div>
             <NeonSeparator className="my-4 opacity-30" />
-            <HealthContextEditor />
+            <HealthContextEditor 
+              data={healthData?.context} 
+              onRefresh={refreshHealth} 
+            />
           </SurfacePanel>
 
           <SurfacePanel className="p-6 md:p-8 space-y-6 bg-transparent border-white/10">
@@ -184,10 +208,21 @@ export default function ProfilePage() {
               <MedicalRecordUploader
                 onUploadSuccess={() => setRefreshTrigger((prev) => prev + 1)}
               />
-              <MedicalRecordList refreshTrigger={refreshTrigger} />
+              <MedicalRecordList 
+                records={recordData?.records} 
+                onRefresh={refreshRecords} 
+              />
             </div>
           </SurfacePanel>
         </div>
+        <ConfirmDialog 
+          isOpen={isLogoutDialogOpen}
+          onClose={() => setIsLogoutDialogOpen(false)}
+          onConfirm={handleSignOut}
+          title="Terminate Session?"
+          description="Are you sure you want to log out? Your secure session will be ended."
+          variant="destructive"
+        />
       </div>
     </div>
   );

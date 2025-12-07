@@ -6,43 +6,28 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trash2, FileText, Loader2, Edit2, Check, X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 
-interface MedicalRecord {
+export interface MedicalRecord {
   id: string;
   fileName: string;
   summary: string;
   createdAt: string;
 }
 
-import { useCachedFetch } from "@/hooks/use-fetch-cache";
 import { fetchWithAuth } from "@/lib/api-client";
 
+interface MedicalRecordListProps {
+  records?: MedicalRecord[];
+  onRefresh: () => void;
+}
+
 export function MedicalRecordList({
-  refreshTrigger,
-}: {
-  refreshTrigger: number;
-}) {
-  const {
-    data: fetchedData,
-    loading,
-    refresh,
-  } = useCachedFetch<{ records: MedicalRecord[] }>("/api/medical-records", {
-    withAuth: true,
-  });
-  const [records, setRecords] = useState<MedicalRecord[]>([]);
+  records = [],
+  onRefresh,
+}: MedicalRecordListProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editSummary, setEditSummary] = useState("");
 
-  useEffect(() => {
-    if (fetchedData && fetchedData.records) {
-      setRecords(fetchedData.records);
-    }
-  }, [fetchedData]);
 
-  useEffect(() => {
-    if (refreshTrigger > 0) {
-      refresh();
-    }
-  }, [refreshTrigger, refresh]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this record?")) return;
@@ -51,7 +36,7 @@ export function MedicalRecordList({
       await fetchWithAuth(`/api/medical-records?id=${id}`, {
         method: "DELETE",
       });
-      refresh();
+      onRefresh();
     } catch (err) {
       console.error("Failed to delete record", err);
     }
@@ -78,18 +63,13 @@ export function MedicalRecordList({
       });
 
       setEditingId(null);
-      refresh();
+      onRefresh();
     } catch (err) {
       console.error("Failed to update record", err);
     }
   };
 
-  if (loading)
-    return (
-      <div className="text-center p-4">
-        <Loader2 className="w-6 h-6 animate-spin mx-auto" />
-      </div>
-    );
+
 
   if (records.length === 0) {
     return (

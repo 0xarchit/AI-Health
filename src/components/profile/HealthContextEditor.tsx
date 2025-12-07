@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Activity, Plus, X, Loader2 } from "lucide-react";
 
-interface HealthContext {
+export interface HealthContext {
   allergies: string[];
   conditions: string[];
   medications: string[];
@@ -16,10 +16,14 @@ interface HealthContext {
   gender: string;
 }
 
-import { useCachedFetch } from "@/hooks/use-fetch-cache";
 import { fetchWithAuth } from "@/lib/api-client";
 
-export function HealthContextEditor() {
+interface HealthContextEditorProps {
+  data?: HealthContext;
+  onRefresh: () => void;
+}
+
+export function HealthContextEditor({ data, onRefresh }: HealthContextEditorProps) {
   const [context, setContext] = useState<HealthContext>({
     allergies: [],
     conditions: [],
@@ -34,28 +38,21 @@ export function HealthContextEditor() {
   });
   const [saving, setSaving] = useState(false);
 
-  const {
-    data: fetchedData,
-    loading,
-    refresh,
-  } = useCachedFetch<{ context: HealthContext }>("/api/health-context", {
-    withAuth: true,
-  });
-
   useEffect(() => {
-    if (fetchedData && fetchedData.context) {
+    if (data) {
       setContext({
-        allergies: fetchedData.context.allergies || [],
-        conditions: fetchedData.context.conditions || [],
-        medications: fetchedData.context.medications || [],
-        additionalNotes: fetchedData.context.additionalNotes || "",
-        gender: fetchedData.context.gender || "male",
+        allergies: data.allergies || [],
+        conditions: data.conditions || [],
+        medications: data.medications || [],
+        additionalNotes: data.additionalNotes || "",
+        gender: data.gender || "male",
       });
     }
-  }, [fetchedData]);
+  }, [data]);
 
   const handleSave = async () => {
     setSaving(true);
+
     try {
       await fetchWithAuth("/api/health-context", {
         method: "POST",
@@ -64,7 +61,7 @@ export function HealthContextEditor() {
         },
         body: JSON.stringify(context),
       });
-      refresh();
+      onRefresh();
     } catch (err) {
       console.error("Failed to save context", err);
     } finally {
@@ -93,12 +90,7 @@ export function HealthContextEditor() {
     }));
   };
 
-  if (loading)
-    return (
-      <div className="text-center p-4">
-        <Loader2 className="w-6 h-6 animate-spin mx-auto" />
-      </div>
-    );
+
 
   return (
     <Card className="bg-transparent border-none shadow-none">
