@@ -66,7 +66,7 @@ export default function ProfilePage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-transparent p-4 md:p-6 lg:p-8 font-sans selection:bg-primary/20 relative overflow-hidden">
+    <div className="min-h-screen bg-transparent p-4 md:p-6 lg:p-8 font-sans selection:bg-primary/20 relative overflow-x-hidden pb-10">
       <div className="max-w-5xl mx-auto space-y-8 relative z-10">
         <header className="flex items-center justify-between pb-6 border-b border-border/40">
           <div className="flex items-center gap-6">

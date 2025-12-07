@@ -143,7 +143,7 @@ export default function LandingPageAurora() {
   ];
 
   return (
-    <div className="min-h-screen bg-transparent text-foreground overflow-hidden relative selection:bg-emerald-500/30">
+    <div className="min-h-screen bg-transparent text-foreground overflow-x-hidden relative selection:bg-emerald-500/30">
       <nav className="relative z-50 flex items-center justify-between p-6 max-w-7xl mx-auto border-b border-border/10 backdrop-blur-sm">
         <div className="flex items-center gap-3 font-bold text-xl tracking-tighter cursor-default group">
           <div className="relative transition-transform duration-500 group-hover:rotate-360">

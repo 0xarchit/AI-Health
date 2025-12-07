@@ -174,7 +174,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8 font-sans selection:bg-primary/20 relative overflow-hidden">
+    <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8 font-sans selection:bg-primary/20 relative overflow-x-hidden pb-10">
       <div className="max-w-[1600px] mx-auto space-y-6 relative z-10">
         {!modelUrl && !modelLoading && !hasSkippedModel && (
           <ModelDownloadPrompt
