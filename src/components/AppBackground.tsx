@@ -21,7 +21,7 @@ export function AppBackground() {
           colorStops={
             isDark
               ? ["#020617", "#10b981", "#3b82f6"]
-              : ["#34d399", "#06b6d4", "#3b82f6"]
+              : ["#21cc8dff", "#04c8ebff", "#2176ffff"]
           }
           speed={0.5}
           amplitude={1.0}

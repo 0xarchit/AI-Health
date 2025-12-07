@@ -50,7 +50,6 @@ export default function ProfilePage() {
   } = useCachedFetch<{ records: MedicalRecord[] }>(isAuthenticated ? "/api/medical-records" : "");
 
   const [user, setUser] = useState<any>(null);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const router = useRouter();
 
   useEffect(() => {
@@ -59,9 +58,7 @@ export default function ProfilePage() {
     }
   }, [userData]);
 
-  useEffect(() => {
-    if (refreshTrigger > 0) refreshRecords();
-  }, [refreshTrigger, refreshRecords]);
+
 
   const { isLoading: initialLoading, message: loadingMessage } = useInitialLoad([
       { key: 'auth', isLoading: authLoading, message: 'VERIFYING CREDENTIALS' },
@@ -206,7 +203,7 @@ export default function ProfilePage() {
 
             <div className="space-y-6">
               <MedicalRecordUploader
-                onUploadSuccess={() => setRefreshTrigger((prev) => prev + 1)}
+                onUploadSuccess={refreshRecords}
               />
               <MedicalRecordList 
                 records={recordData?.records} 

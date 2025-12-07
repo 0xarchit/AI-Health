@@ -39,13 +39,13 @@ export function ConfirmDialog({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
           />
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className="relative w-full max-w-lg rounded-xl border border-white/10 bg-card/90 backdrop-blur-xl p-6 shadow-2xl z-10"
+            className="relative w-full max-w-lg rounded-xl border border-border bg-card shadow-2xl z-10 p-6"
           >
              <div className="flex flex-col gap-4">
                 <div className="flex items-center gap-4">

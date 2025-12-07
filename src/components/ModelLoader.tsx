@@ -208,8 +208,8 @@ export function ModelDownloadPrompt({
   }, [checkServerStatus]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-card/90 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl max-w-md w-full p-8 space-y-8 relative overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-card border border-border rounded-3xl shadow-2xl max-w-md w-full p-8 space-y-8 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50" />
         <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/20 blur-3xl rounded-full pointer-events-none" />
 
@@ -342,8 +342,8 @@ export function ModelDownloadPrompt({
 
 export function ModelDownloading({ progress }: { progress: number }) {
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex flex-col items-center justify-center p-4">
-      <div className="max-w-md w-full space-y-8 text-center">
+    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-md flex flex-col items-center justify-center p-4">
+      <div className="max-w-md w-full space-y-8 text-center bg-card p-8 rounded-3xl border border-border shadow-2xl">
         <div className="relative w-24 h-24 mx-auto">
           <div className="absolute inset-0 border-4 border-muted rounded-full"></div>
           <div

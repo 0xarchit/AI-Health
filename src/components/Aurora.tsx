@@ -156,7 +156,8 @@ export default function Aurora(props: AuroraProps) {
     }
 
     const colorStopsArray = colorStops.map(hex => {
-      const c = new Color(hex);
+      const safeHex = hex.length > 7 ? hex.substring(0, 7) : hex;
+      const c = new Color(safeHex);
       return [c.r, c.g, c.b];
     });
 
@@ -185,7 +186,8 @@ export default function Aurora(props: AuroraProps) {
         program.uniforms.uBlend.value = propsRef.current.blend ?? blend;
         const stops = propsRef.current.colorStops ?? colorStops;
         program.uniforms.uColorStops.value = stops.map((hex: string) => {
-          const c = new Color(hex);
+          const safeHex = hex.length > 7 ? hex.substring(0, 7) : hex;
+          const c = new Color(safeHex);
           return [c.r, c.g, c.b];
         });
         renderer.render({ scene: mesh });
